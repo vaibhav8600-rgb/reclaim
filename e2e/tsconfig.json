@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ],
+    "noEmit": true
+  },
+  "include": [
+    ".",
+    "../playwright.config.ts",
+    "../src/db/db.ts",
+    "../src/lib/exercises.ts",
+    "../server",
+    "../shared"
+  ]
+}

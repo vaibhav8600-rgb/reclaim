@@ -1,0 +1,8 @@
+node_modules
+dist
+dev-dist
+*.local
+*.tsbuildinfo
+test-results
+playwright-report
+Reclaim-demo.json
