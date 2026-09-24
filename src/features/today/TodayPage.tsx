@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router'
 import { MLink } from '../../components/MLink'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, CloudDownload, CloudUpload, HeartPulse, Plus, Ruler, Smartphone, Sparkles, UserRound } from 'lucide-react'
+import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, ClipboardList, CloudDownload, CloudUpload, HeartPulse, Plus, Ruler, Smartphone, Sparkles, UserRound } from 'lucide-react'
 import { db } from '../../db/db'
 import { isOpenInjury, useEntries, useInjuries, useInjuryMap, useMeals, useMeta, usePrescriptions, useProfile, useSymptomsSince, useWater } from '../../db/hooks'
 import { alive, setMeta } from '../../db/repo'
@@ -64,6 +64,8 @@ export function TodayPage() {
       )}
 
       {injuries.length > 0 && <InsightsToday />}
+
+      {open.length > 0 && <PlanToday />}
 
       <RehabToday hasInjuries={injuries.length > 0} />
 
@@ -271,6 +273,23 @@ function InsightsToday() {
         <span className="min-w-0 flex-1">
           <span className="block font-medium">{summary ? summary.result.headline : 'Your weekly summary'}</span>
           <span className="block text-[0.875rem] text-muted">{summary ? `Updated ${relativeAge(summary.at)} · Ask a question` : 'How this week compares, and questions for your clinician'}</span>
+        </span>
+        <ChevronRight size={18} className="mt-2 text-faint" />
+      </MLink>
+    </Section>
+  )
+}
+
+/** The recovery plan: its state, or an invitation to draft one. */
+function PlanToday() {
+  const plan = useMeta<{ at: number; acceptedAt?: number; result: { exercises: unknown[] } }>('recoveryPlan')
+  return (
+    <Section prominent title="Recovery Plan">
+      <MLink to="/plan" className="card cell cell-press !items-start !py-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"><ClipboardList size={19} /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium">{plan ? (plan.acceptedAt ? 'Your plan and this week’s check' : 'Your draft plan is ready') : 'Draft a plan for your recovery'}</span>
+          <span className="block text-[0.875rem] text-muted">{plan ? `Created ${relativeAge(plan.at)} · update it every week or two` : 'Exercises from a checked library, protein and water targets, and what to watch for'}</span>
         </span>
         <ChevronRight size={18} className="mt-2 text-faint" />
       </MLink>

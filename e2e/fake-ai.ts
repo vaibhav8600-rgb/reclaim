@@ -52,6 +52,21 @@ export const ANSWERS: { [T in AiTask]: AiOutput<T> } = {
     ],
     assumptions: ['Chicken portion judged from a standard dinner plate.'],
   },
+  'recovery-plan': {
+    summary: 'Your tennis elbow has settled to around 2–3/10, so the plan keeps loading the tendon and adds forearm rotation. Your lower back stays on gentle mobility with some hip strength. This is a draft for your physio to check.',
+    focus: ['Keep elbow pain at or below 3/10 during exercises.', 'Build forearm strength for typing and badminton.'],
+    exercises: [
+      { exerciseId: 'ex-wrist-ext-ecc', injuryId: 'demo-injury-elbow', sets: 3, target: 15, timesPerDay: 1, daysPerWeek: 7, why: 'Your pain has eased, so slow lowering keeps building the tendon.' },
+      // Over the vetted range (sets 2–3): the app must cap it.
+      { exerciseId: 'ex-pro-sup', injuryId: 'demo-injury-elbow', sets: 10, target: 12, timesPerDay: 1, daysPerWeek: 6, why: 'Rotation strength helps with gripping a racket.' },
+      { exerciseId: 'ex-glute-bridge', injuryId: 'demo-injury-back', sets: 2, target: 12, timesPerDay: 1, daysPerWeek: 4, why: 'Hip strength supports your lower back.' },
+      // Not in the library, and for a resolved injury: both must be dropped.
+      { exerciseId: 'ex-made-up', sets: 3, target: 10, timesPerDay: 1, daysPerWeek: 5, why: 'Invented.' },
+      { exerciseId: 'ex-calf-raise', injuryId: 'demo-injury-ankle', sets: 3, target: 15, timesPerDay: 1, daysPerWeek: 5, why: 'Old ankle sprain.' },
+    ],
+    cautions: ['Your records show vitamin D was low in July (16 ng/mL); ask whether it affects your recovery.'],
+    questions: ['When can I return to badminton?'],
+  },
   'health-summary': {
     overview: 'Your records cover two blood tests (30 Jul and 18 Sept 2026) and an MRI of the right elbow. They record lateral epicondylitis and a weekly vitamin D supplement.',
     attention: [{ label: 'Vitamin D (25-OH)', detail: '16 ng/mL on 30 Jul (range 30 - 100), below the range. It measures the vitamin D stored in your body.' }],

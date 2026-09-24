@@ -48,6 +48,7 @@ export const inputs = {
   ask: z.object({ question: z.string().min(2).max(500), context }),
   'report-narrative': z.object({ context }),
   'health-summary': z.object({ context }),
+  'recovery-plan': z.object({ context }),
 } as const
 
 export type AiTask = keyof typeof inputs
@@ -168,6 +169,25 @@ export const outputs = {
     attention: z.array(z.object({ label: text(120), detail: text(500) })).max(15),
     trends: list(10),
     questions: list(8),
+  }),
+  'recovery-plan': z.object({
+    summary: loose(1200).catch(''),
+    focus: keepValid(loose(200), 5),
+    /** Chosen only from the library it was given; the app drops unknown ids and clamps doses to the vetted ranges. */
+    exercises: keepValid(
+      z.object({
+        exerciseId: loose(80),
+        injuryId: loose(100).optional().catch(undefined),
+        sets: z.coerce.number(),
+        target: z.coerce.number(),
+        timesPerDay: z.coerce.number(),
+        daysPerWeek: z.coerce.number(),
+        why: loose(300).catch(''),
+      }),
+      10,
+    ),
+    cautions: keepValid(loose(300), 6),
+    questions: keepValid(loose(300), 5),
   }),
 } satisfies Record<AiTask, z.ZodType>
 

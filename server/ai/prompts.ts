@@ -215,6 +215,43 @@ Their log for the report period: ${data(i.context)}`,
         ),
       }
     }
+    case 'recovery-plan': {
+      const i = input as AiInput<'recovery-plan'>
+      return {
+        text: `Draft a recovery plan for this person to take to their physiotherapist. This task is the one exception to the rule about exercises: choose rehab exercises, but ONLY from "library" below (never any other exercise), with sets, reps or seconds, times per day and days per week INSIDE each exercise's ranges. It is a draft for their clinician to check; say so plainly.
+Choose 3–6 exercises that suit their open injuries, stage and current pain (e.g. isometric holds when pain is high or recent, loading exercises as it settles; gentler doses when recent pain is 6/10 or more). Keep exercises already in their plan if they fit, and use the injury's id in injuryId. Lower doses than the range allows are fine for a start; never go above it.
+why: one sentence tying the exercise to their injury and log, in plain words.
+Summary: 3–5 sentences — what the plan focuses on and why, based on their injuries, pain trend, rehab so far and health records.
+Focus: the main goals for the next 2 weeks.
+Cautions: things from their records to check with their clinician before starting (medicines, flagged results, conditions, recent pain spikes), quoting the record; and if pain is severe or getting worse, say to check with a clinician first.
+Questions: questions to ask their physio about this plan.
+Their log and records: ${data(i.context)}`,
+        schema: obj(
+          {
+            summary: str('3–5 sentences.'),
+            focus: arr(str(), 4),
+            exercises: arr(
+              obj(
+                {
+                  exerciseId: str('An id from the library.'),
+                  injuryId: str(),
+                  sets: { type: 'integer' },
+                  target: { type: 'integer', description: 'Reps per set, or seconds per set for timed exercises.' },
+                  timesPerDay: { type: 'integer' },
+                  daysPerWeek: { type: 'integer' },
+                  why: str(),
+                },
+                ['exerciseId', 'sets', 'target', 'timesPerDay', 'daysPerWeek', 'why'],
+              ),
+              8,
+            ),
+            cautions: arr(str(), 5),
+            questions: arr(str(), 4),
+          },
+          ['summary', 'focus', 'exercises', 'cautions', 'questions'],
+        ),
+      }
+    }
     case 'health-summary': {
       const i = input as AiInput<'health-summary'>
       return {

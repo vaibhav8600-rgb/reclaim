@@ -42,6 +42,7 @@ const LabPage = page(() => import('./features/health/LabPage'), 'LabPage')
 const ReviewPage = page(() => import('./features/health/ReviewPage'), 'ReviewPage')
 const FactFormPage = page(() => import('./features/health/FactFormPage'), 'FactFormPage')
 const ImportPage = page(() => import('./features/health/ImportPage'), 'ImportPage')
+const PlanPage = page(() => import('./features/plan/PlanPage'), 'PlanPage')
 const SummariesPage = page(() => import('./features/health/SummariesPage'), 'SummariesPage')
 
 function Preload() {
@@ -73,6 +74,7 @@ export function App() {
             <Route path="report" element={<ReportPage />} />
             <Route path="nutrition" element={<NutritionPage />} />
             <Route path="health" element={<HealthPage />} />
+            <Route path="plan" element={<PlanPage />} />
             <Route path="health/lab" element={<LabPage />} />
             <Route path="health/summaries" element={<SummariesPage />} />
             <Route path="settings" element={<SettingsPage />} />

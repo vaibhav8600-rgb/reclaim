@@ -58,6 +58,7 @@ test('the record-reading answer survives small model slips, and Gemini gets a sc
     ask: { question: 'why?', context: {} },
     'report-narrative': { context: {} },
     'health-summary': { context: {} },
+    'recovery-plan': { context: {} },
   }
   for (const task of AI_TASKS) expect(Math.max(0, ...maxItems(buildPrompt(task, samples[task] as never).schema)), task).toBeLessThanOrEqual(20)
 })

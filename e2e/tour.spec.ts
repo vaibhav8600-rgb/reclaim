@@ -110,6 +110,11 @@ for (const scheme of ['light', 'dark'] as const) {
     await expect(page.getByRole('heading', { name: 'Needs Attention' })).toBeVisible()
     await shot('ai-health-overview')
 
+    await page.goto('/plan')
+    await page.getByRole('button', { name: 'Create My Plan' }).click()
+    await expect(page.getByRole('heading', { name: 'Daily Targets' })).toBeVisible()
+    await shot('ai-plan')
+
     await page.goto('/report?injury=demo-injury-elbow')
     await page.getByRole('button', { name: 'Add AI Summary' }).click()
     await expect(page.getByText(/Drafted by AI/)).toBeVisible()

@@ -4,6 +4,7 @@ import { kindInfo, sideLabel, symptomLabel } from './constants'
 import { dayKey, daysAgo, daysBetween, fromDayKey } from './dates'
 import { factKey, factValue } from './facts'
 import { dailyProtein } from './nutrition'
+import { candidates } from './plan'
 import { itemDone, startOfWeek, weeklyAdherence } from './rehab'
 
 /**
@@ -188,6 +189,29 @@ export async function buildHealthContext() {
       test: rs[rs.length - 1].name,
       range: rs[rs.length - 1].range,
       results: rs.slice(-8).map((f) => ({ date: f.date, result: factValue(f), flag: f.flag })),
+    })),
+  }
+}
+
+/**
+ * For the recovery plan: the 14-day log and health profile, the open injuries (with ids to assign exercises to),
+ * and the vetted exercises that suit them, with their dose ranges. The AI may choose only from this library.
+ */
+export async function buildPlanContext() {
+  const [base, injuries, exercises] = await Promise.all([buildAiContext({ days: 14 }), db.injuries.toArray(), db.exercises.toArray()])
+  const open = injuries.filter((i) => alive(i) && i.status !== 'resolved')
+  return {
+    ...base,
+    openInjuries: open.map((i) => ({ id: i.id, name: i.name, region: `${sideLabel(i.side) ?? ''} ${i.bodyRegion}`.trim(), status: i.status, diagnosis: i.diagnosis, daysSinceStart: daysBetween(fromDayKey(i.startDate), Date.now()) })),
+    library: candidates(exercises.filter(alive), open).map(({ exercise: e, guide: g }) => ({
+      id: e.id,
+      name: e.name,
+      for: g.for,
+      sets: g.sets,
+      [e.mode === 'time' ? 'secondsPerSet' : 'repsPerSet']: g.target,
+      timesPerDay: g.timesPerDay,
+      daysPerWeek: g.daysPerWeek,
+      note: g.caution,
     })),
   }
 }
