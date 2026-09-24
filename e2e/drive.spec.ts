@@ -176,4 +176,14 @@ test('delete everything removes this device’s data and the Drive backups: a tr
   await page.getByRole('link', { name: 'Restore from Google Drive' }).click()
   await page.getByRole('button', { name: 'Continue with Google' }).click()
   await expect(page.getByRole('heading', { name: 'Create a passphrase' })).toBeVisible()
+
+  // Once connected, the first screen no longer offers a restore (there's nothing to restore into).
+  await page.getByLabel('Passphrase', { exact: true }).fill(PASS)
+  await page.getByLabel('Confirm passphrase').fill(PASS)
+  await page.getByRole('checkbox').check()
+  await page.getByRole('button', { name: 'Encrypt and Back Up' }).click()
+  await expect(page.getByText('Google Drive connected')).toBeVisible({ timeout: 90_000 })
+  await page.goto('/')
+  await expect(page.getByText('What are you recovering from?')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Restore from Google Drive' })).toHaveCount(0)
 })

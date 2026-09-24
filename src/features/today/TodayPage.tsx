@@ -26,8 +26,10 @@ export function TodayPage() {
   const injuryMap = useInjuryMap()
   const open = injuries?.filter(isOpenInjury) ?? []
   const today = useEntries({ from: startOfDay(Date.now()) })
+  // undefined while loading: the restore link waits for the answer instead of flashing in and out.
+  const driveLinked = useLiveQuery(async () => !!(await db.meta.get('drive')), [])
 
-  if (!injuries || !today) return null
+  if (!injuries || !today || driveLinked === undefined) return null
   const initial = profile?.name?.trim()[0]?.toUpperCase()
 
   return (
@@ -53,7 +55,7 @@ export function TodayPage() {
             <div className="flex flex-col items-center gap-2">
               <MLink to="/injuries/new" className="btn btn-primary"><Plus size={20} /> Add Injury</MLink>
               {/* After Sign Out (or on a new iPhone), the way back to an encrypted Drive backup */}
-              {GOOGLE_CLIENT_ID && <MLink to="/settings/drive" className="btn btn-quiet"><CloudDownload size={19} /> Restore from Google Drive</MLink>}
+              {GOOGLE_CLIENT_ID && !driveLinked && <MLink to="/settings/drive" className="btn btn-quiet"><CloudDownload size={19} /> Restore from Google Drive</MLink>}
             </div>
           }
         />
