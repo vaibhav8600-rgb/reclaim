@@ -31,34 +31,32 @@ test('the Shortcut’s lines are read carefully: sleep segments become nights, p
   expect(h.skipped).toBe(2)
 })
 
-const link = (lines: string[], key?: string) => `/import/health#${key ? `k=${key}&` : ''}d=${encodeURIComponent(lines.join('\n'))}`
+test('Shortcut lines with semicolons keep thousands and decimal commas', () => {
+  const h = parseHealthExport(['steps;2026-09-23;6,420', 'weight;2026-09-24 07:30;85,4;kg', 'weight;2026-09-23 07:30;187.6 lb'].join('\n'), NOW)
+  expect([...h.steps]).toEqual([['2026-09-23', 6420]])
+  expect(h.weights.map((w) => w.kg)).toEqual([85.4, 85.1])
+})
 
-test('an import link shows what it brings and waits for a tap; your own link imports by itself; nothing doubles', async ({ page }) => {
+test('paste what the Shortcut copied: it imports, and the same data twice changes nothing', async ({ page }) => {
   await importBackup(page, injuriesBackup('Tennis elbow'))
   const day = new Date(Date.now() - 86_400_000)
   const d = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
-  const lines = [`steps,${d},6420`, `weight,${d} 07:30,85.4`, `sleep,${d} 00:30,${d} 07:10,Core`]
+  const lines = [`steps;${d};6420`, `weight;${d} 07:30;85.4;kg`, `sleep;${d} 00:30;${d} 07:10;Core`].join('\n')
 
-  // Anyone's link: preview first, nothing saved until Import
-  await page.goto(link(lines, 'not-my-key'))
-  await expect(page.getByText('1 day of steps · 1 weight · 1 night of sleep')).toBeVisible()
-  expect((await dumpDb(page)).activity ?? []).toHaveLength(0)
-  await page.getByRole('button', { name: 'Import' }).click()
-  await expect(page.getByText(/Imported from Apple Health/)).toBeVisible()
-  let db = await dumpDb(page)
+  await page.goto('/settings/health')
+  await expect(page.getByRole('link', { name: '1. Run the Shortcut' })).toHaveAttribute('href', 'shortcuts://run-shortcut?name=Reclaim%20Health')
+  for (let i = 0; i < 2; i++) {
+    await page.getByLabel('Apple Health data').fill(lines)
+    await page.getByRole('button', { name: 'Import', exact: true }).click()
+    await expect(page.getByText('Imported from Apple Health: 1 day of steps · 1 weight · 1 night of sleep').last()).toBeVisible()
+    await expect(page.getByLabel('Apple Health data')).toHaveValue('')
+  }
+  const db = await dumpDb(page)
   expect(db.activity).toMatchObject([{ date: d, steps: 6420, source: 'device' }])
   expect(db.measurements).toMatchObject([{ kind: 'weight', value: 85.4, unit: 'kg', method: 'Apple Health', source: 'device' }])
   expect(db.sleep).toHaveLength(1)
 
-  // Your personal link (from the setup guide) imports without asking — and the same data twice changes nothing
-  await page.goto('/settings/health')
-  await expect(page.getByTestId('health-link')).toHaveText(/#k=\w+&d=$/) // the key is made on first visit
-  const shown = await page.getByTestId('health-link').textContent()
-  const key = /#k=(\w+)&d=$/.exec(shown!)![1]
-  await page.goto(link([...lines, `steps,${d},6420`], key)) // a repeated day adds up within one import only
-  await expect(page.getByText(/Imported from Apple Health/)).toBeVisible()
-  db = await dumpDb(page)
-  expect(db.measurements).toHaveLength(1)
-  expect(db.sleep).toHaveLength(1)
-  expect(db.activity).toMatchObject([{ steps: 12840 }])
+  await page.getByLabel('Apple Health data').fill('hello')
+  await page.getByRole('button', { name: 'Import', exact: true }).click()
+  await expect(page.getByText(/No Apple Health data there/)).toBeVisible()
 })

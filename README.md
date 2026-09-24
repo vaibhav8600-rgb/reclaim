@@ -34,8 +34,9 @@ The service worker (offline mode) and reliable storage need HTTPS, so deploy it:
 ## Apple Health (optional)
 
 A web app can’t read Apple Health directly, so an iPhone Shortcut reads steps, exercise minutes, weight and sleep
-and opens Reclaim with them. **Settings → Apple Health** has your personal import link and the steps to build the
-Shortcut (about 10 minutes, once), plus a daily automation so it runs on its own. Imports are idempotent: the same
+and copies them. In **Settings → Apple Health**, tap **Run the Shortcut**, switch back, then **Paste from Apple
+Health**. (Copy and paste, not a link: a Shortcut can only open Safari, which keeps separate storage from the Home
+Screen app.) The page has the steps to build the Shortcut, about 10 minutes once. Imports are idempotent: the same
 data twice changes nothing, deleted entries stay deleted, and nights you logged by hand aren’t doubled.
 
 ## Google Drive backup (optional)
