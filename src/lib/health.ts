@@ -123,6 +123,8 @@ export async function confirmFacts(doc: MedicalDocument, kept: ExtractedFact[]) 
         flag: effectiveFlag(f),
         detail: f.detail || undefined,
         evidence: f.evidence,
+        bodyRegion: f.kind === 'condition' ? f.bodyRegion : undefined,
+        side: f.kind === 'condition' ? f.side : undefined,
         date: doc.date,
         documentId: doc.id,
         source: 'user_confirmed',

@@ -10,6 +10,7 @@ import { MLink } from '../../components/MLink'
 import { EmptyState, Group, IconTile, NavBar, Row, Section, Toggle } from '../../components/ui'
 import { runAi } from '../../lib/ai'
 import { buildPlanContext } from '../../lib/aiContext'
+import { weightKg } from '../../lib/constants'
 import { daysAgo, relativeAge } from '../../lib/dates'
 import { EXERCISE_GUIDES, GUIDELINES, type GuidelineId } from '../../lib/guide'
 import { useGo } from '../../lib/nav'
@@ -17,6 +18,7 @@ import { clampDose, dailyTargets, weeklyCheck, type Check } from '../../lib/plan
 import { formatFrequency, formatTarget } from '../../lib/rehab'
 import { toast } from '../../lib/toast'
 import { ExerciseAnimation } from '../rehab/ExerciseAnimation'
+import { InjurySuggestions } from '../health/InjurySuggestions'
 
 export interface StoredPlan {
   result: AiOutput<'recovery-plan'>
@@ -46,7 +48,7 @@ export function PlanPage() {
   const sessions = useSessions(daysAgo(7))
   const facts = useFacts()
   const profile = useProfile()
-  const weight = useLiveQuery(async () => (await db.measurements.where('kind').equals('weight').toArray()).filter((m) => alive(m) && m.unit === 'kg').sort((a, b) => b.recordedAt - a.recordedAt)[0], [])
+  const weight = useLiveQuery(async () => weightKg((await db.measurements.where('kind').equals('weight').toArray()).filter(alive).sort((a, b) => b.recordedAt - a.recordedAt)[0]) ?? null, [])
   const [writing, setWriting] = useState<Partial<AiOutput<'recovery-plan'>>>()
   const [skipped, setSkipped] = useState<Set<string>>(new Set())
   const [setGoals, setSetGoals] = useState(true)
@@ -57,6 +59,7 @@ export function PlanPage() {
     return (
       <div className="space-y-7 pb-4">
         <NavBar title="Recovery Plan" back="/" />
+        <InjurySuggestions />
         <EmptyState icon={ClipboardList} title="No current injuries" body="Add the injury you’re recovering from, and a plan can be drafted from it, your records and your logs." action={<MLink to="/injuries/new" className="btn btn-primary">Add Injury</MLink>} />
       </div>
     )
@@ -75,7 +78,7 @@ export function PlanPage() {
       return [{ exercise, guide, injury, dose: clampDose(guide, x), why: x.why, existing: activeByExercise.get(x.exerciseId) }]
     })
   const toAdd = items.filter((i) => !i.existing && !skipped.has(i.exercise.id))
-  const targets = dailyTargets(weight?.value, facts)
+  const targets = dailyTargets(weight ?? undefined, facts)
   const goalsChange = !!(targets.protein && targets.protein.target !== profile?.proteinTarget) || !!(targets.water && targets.water.target !== profile?.waterTarget)
   const checks = prescriptions.filter((p) => p.active).map((p) => ({ p, exercise: exercises.get(p.exerciseId), check: weeklyCheck(p, sessions) }))
   const refs = new Set<GuidelineId>(['painMonitoring', 'protein', 'water', ...items.flatMap((i) => i.guide.refs)])
@@ -174,8 +177,8 @@ export function PlanPage() {
 
               <Section prominent title="Daily Targets" footer="Calories aren’t set: they depend on your height, age, sex and activity. A dietitian can work them out with you.">
                 <Group inset="3.625rem">
-                  <TargetRow icon={Utensils} color="purple" title="Protein" unit="g" value={targets.protein} hold={targets.hold.protein} weight={weight?.value} basis="1.6 g per kg" />
-                  <TargetRow icon={Droplet} color="blue" title="Water" unit="ml" value={targets.water} hold={targets.hold.water} weight={weight?.value} basis="about 33 ml per kg" />
+                  <TargetRow icon={Utensils} color="purple" title="Protein" unit="g" value={targets.protein} hold={targets.hold.protein} weight={weight ?? undefined} basis="1.6 g per kg" />
+                  <TargetRow icon={Droplet} color="blue" title="Water" unit="ml" value={targets.water} hold={targets.hold.water} weight={weight ?? undefined} basis="about 33 ml per kg" />
                   {goalsChange && <Toggle label="Set These as My Daily Goals" checked={setGoals} onChange={setSetGoals} />}
                 </Group>
               </Section>

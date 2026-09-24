@@ -96,7 +96,7 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
 
   const series = new Map<string, typeof measurements>()
   for (const m of measurements.filter(inScope).sort((a, b) => a.recordedAt - b.recordedAt)) {
-    const k = `${m.kind === 'other' ? m.method : kindInfo(m.kind).label}${m.side && m.side !== 'none' ? ` (${m.side})` : ''}`
+    const k = `${m.kind === 'other' ? m.method : kindInfo(m.kind).label}${m.side && m.side !== 'none' ? ` (${m.side})` : ''} [${m.unit}]` // one series per unit: cm and in never mix
     series.set(k, [...(series.get(k) ?? []), m])
   }
 

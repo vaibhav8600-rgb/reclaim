@@ -15,6 +15,13 @@ export const DOCUMENT_KIND_VALUES = ['imaging', 'lab', 'prescription', 'letter',
 /** What a fact pulled from a medical record is about. */
 export const FACT_KINDS = ['condition', 'medication', 'lab', 'imaging', 'procedure', 'allergy', 'vital'] as const
 export const FACT_FLAGS = ['low', 'high', 'abnormal'] as const
+/** Where an injury or condition is (the app's body regions). */
+export const BODY_REGION_VALUES = [
+  'Head', 'Neck', 'Shoulder', 'Upper arm', 'Elbow', 'Forearm', 'Wrist', 'Hand & fingers',
+  'Chest', 'Upper back', 'Lower back', 'Abdomen', 'Hip', 'Groin', 'Thigh', 'Knee',
+  'Shin & calf', 'Ankle', 'Foot', 'Other',
+] as const
+export const FACT_SIDES = ['left', 'right', 'both'] as const
 
 /** Vercel functions accept ~4.5 MB request bodies; base64 adds a third. */
 export const MAX_REQUEST_BYTES = 4_400_000
@@ -86,6 +93,9 @@ export const extractedFact = z.object({
   range: loose(200).optional().catch(undefined),
   flag: z.enum(FACT_FLAGS).optional().catch(undefined),
   detail: loose(400).optional().catch(undefined),
+  /** For a condition of one body part (an injury, a joint or tendon problem): where, and which side. */
+  bodyRegion: z.enum(BODY_REGION_VALUES).optional().catch(undefined),
+  side: z.enum(FACT_SIDES).optional().catch(undefined),
   evidence: loose(300).catch(''),
 })
 export type ExtractedFact = z.infer<typeof extractedFact>

@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { FileText, FolderHeart, HeartPulse, Plus, Sparkles } from 'lucide-react'
+import { ClipboardList, FileText, FolderHeart, HeartPulse, Plus, Sparkles } from 'lucide-react'
 import type { AiOutput } from '../../../shared/ai'
 import { db, type HealthFact } from '../../db/db'
-import { useDocuments, useFacts, useMeta } from '../../db/hooks'
+import { isOpenInjury, useDocuments, useFacts, useInjuries, useMeta } from '../../db/hooks'
 import { setMeta } from '../../db/repo'
 import { AiAction } from '../../components/ai'
 import { runAi } from '../../lib/ai'
@@ -15,6 +15,7 @@ import { factKey, factValue } from '../../lib/facts'
 import { needsReading, needsReview, readDocuments, useReadProgress } from '../../lib/health'
 import { DocumentTile } from '../documents/kinds'
 import { FACT_KIND_INFO, FACT_ORDER, FlagPill } from './kinds'
+import { InjurySuggestions } from './InjurySuggestions'
 
 export function HealthPage() {
   const docs = useDocuments()
@@ -58,6 +59,10 @@ export function HealthPage() {
               </Group>
             </Section>
           )}
+
+          <InjurySuggestions />
+
+          <NextStep hasFacts={facts.length > 0} />
 
           {facts.length > 0 && <Overview />}
 
@@ -232,5 +237,23 @@ function OverviewList({ title, items }: { title: string; items?: ReactNode[] }) 
         {shown.map((t, i) => <li key={i}>{t}</li>)}
       </ul>
     </section>
+  )
+}
+
+/** Once records are in and an injury is tracked: the way on to the recovery plan. */
+function NextStep({ hasFacts }: { hasFacts: boolean }) {
+  const injuries = useInjuries()
+  const plan = useMeta<unknown>('recoveryPlan')
+  if (!hasFacts || plan || !injuries?.some(isOpenInjury)) return null
+  return (
+    <Section>
+      <MLink to="/plan" className="card cell cell-press !items-start !py-4">
+        <IconTile icon={ClipboardList} color="green" />
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium">Next: your recovery plan</span>
+          <span className="block text-[0.875rem] text-muted">Exercises from a checked library, protein and water targets — built from your injuries, logs and these records.</span>
+        </span>
+      </MLink>
+    </Section>
   )
 }

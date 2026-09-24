@@ -174,6 +174,9 @@ export interface HealthFact extends Base {
   documentId?: string
   /** The printed words it was read from. */
   evidence?: string
+  /** For a condition of one body part: where, and which side (lets it become an injury to track). */
+  bodyRegion?: string
+  side?: 'left' | 'right' | 'both'
   source: Source
 }
 

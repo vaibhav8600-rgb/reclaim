@@ -13,6 +13,7 @@ import { confirmFacts, needsReview } from '../../lib/health'
 import { useBack, useGo } from '../../lib/nav'
 import { toast } from '../../lib/toast'
 import { SheetForm } from '../log/shared'
+import { injuryPlace } from '../../lib/constants'
 import { kindOf } from '../documents/kinds'
 import { FACT_KIND_INFO, FACT_ORDER, FlagPill } from './kinds'
 
@@ -135,6 +136,7 @@ function FactCheck({ fact, kept, onChange }: { fact: ExtractedFact; kept: boolea
           )}
         </span>
         {fact.range && <span className="block text-[0.8125rem] text-muted">Range {fact.range}</span>}
+        {fact.kind === 'condition' && fact.bodyRegion && <span className="block text-[0.8125rem] text-muted">{injuryPlace({ bodyRegion: fact.bodyRegion, side: fact.side ?? 'none' })}</span>}
         {fact.detail && !(value && fact.value === undefined) && <span className="block text-[0.875rem] text-muted">{fact.detail}</span>}
         <span className="mt-0.5 block text-[0.8125rem] text-faint italic">“{fact.evidence}”</span>
       </span>

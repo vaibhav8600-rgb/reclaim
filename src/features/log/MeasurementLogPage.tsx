@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { useBack } from '../../lib/nav'
 import { db, type Measurement } from '../../db/db'
 import { isOpenInjury, useInjuries } from '../../db/hooks'
-import { restore, save, softDelete } from '../../db/repo'
+import { alive, restore, save, softDelete } from '../../db/repo'
 import { Chips, Field, Group, Segmented } from '../../components/ui'
-import { MEASUREMENT_KINDS, SIDES, kindInfo } from '../../lib/constants'
+import { convertUnit, MEASUREMENT_KINDS, SIDES, kindInfo } from '../../lib/constants'
 import { haptic } from '../../lib/haptics'
 import { requestPersistence } from '../../lib/platform'
 import { toast } from '../../lib/toast'
@@ -30,6 +31,18 @@ export function MeasurementLogPage() {
     value: '',
   })
   const [loaded, setLoaded] = useState(!id)
+  /** The unit last used for each kind, so someone who measures in inches isn't switched back to cm. */
+  const lastUnits = useLiveQuery(async () => {
+    const latest = new Map<string, string>()
+    for (const m of (await db.measurements.orderBy('recordedAt').reverse().toArray()).filter(alive)) if (!latest.has(m.kind)) latest.set(m.kind, m.unit)
+    return latest
+  }, [])
+
+  // A new measurement starts in the unit last used for weight.
+  useEffect(() => {
+    if (!id && lastUnits?.get(draft.kind!)) setDraft((d) => (d.value ? d : { ...d, unit: lastUnits.get(d.kind!) }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastUnits])
 
   useEffect(() => {
     if (!id) return
@@ -48,7 +61,12 @@ export function MeasurementLogPage() {
 
   function pickKind(kind: string) {
     const k = kindInfo(kind)
-    setDraft((d) => ({ ...d, kind, unit: k.unit, injuryId: k.recovery ? d.injuryId ?? presetInjury : undefined }))
+    setDraft((d) => ({ ...d, kind, unit: lastUnits?.get(kind) ?? k.unit, injuryId: k.recovery ? d.injuryId ?? presetInjury : undefined }))
+  }
+
+  /** Switching unit converts what's already typed. */
+  function pickUnit(unit: string) {
+    setDraft((d) => ({ ...d, unit, value: Number.isFinite(value) ? String(convertUnit(value, d.unit!, unit)) : d.value }))
   }
 
   async function submit() {
@@ -108,6 +126,8 @@ export function MeasurementLogPage() {
           <span className="shrink-0 text-[1.25rem] font-medium text-muted">{draft.unit}</span>
         </label>
       </div>
+
+      {info.units && <Segmented options={info.units.map((u) => ({ value: u, label: u }))} value={draft.unit ?? info.unit} onChange={pickUnit} />}
 
       {info.sided && (
         <Segmented options={SIDES.filter((s) => s.value === 'left' || s.value === 'right')} value={draft.side === 'right' ? 'right' : 'left'} onChange={(v) => set('side', v)} />

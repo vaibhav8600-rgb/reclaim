@@ -1,4 +1,4 @@
-import { DOCUMENT_KIND_VALUES, FACT_FLAGS, FACT_KINDS, MEASUREMENT_KINDS, SYMPTOM_TYPES, TIME_OF_DAY, type AiInput, type AiTask } from '../../shared/ai'
+import { BODY_REGION_VALUES, DOCUMENT_KIND_VALUES, FACT_FLAGS, FACT_KINDS, FACT_SIDES, MEASUREMENT_KINDS, SYMPTOM_TYPES, TIME_OF_DAY, type AiInput, type AiTask } from '../../shared/ai'
 
 /** Rules for every task. The model supports the person's own understanding; it is not their clinician. */
 export const SYSTEM = `You are the assistant inside Reclaim, a private recovery journal. You help one person understand their own logged data and prepare for appointments.
@@ -112,7 +112,7 @@ Facts: every fact the document records, exactly as printed. Never add a fact the
 - lab: one per test result, including normal ones. name: the common standard test name, so the same test from different labs matches (e.g. "Haemoglobin", "Vitamin D (25-OH)", "HbA1c", "Urine pus cells"). value: the number; unit and range as printed. flag: "low"/"high" only if the report marks it or the value is outside the printed range; "abnormal" for a marked qualitative result. For a result that isn't a number (e.g. "Nil", "Positive", "Trace"), omit value and put the result in detail.
 - vital: blood pressure, pulse, height, weight, BMI, temperature — value and unit (blood pressure: detail "130/85", unit "mmHg").
 - medication: name as printed (brand and generic if both shown); detail: strength, dose, how often, how long, and what for, if stated.
-- condition: each diagnosis or problem the document states; detail: side, severity or status if stated.
+- condition: each diagnosis or problem the document states; detail: severity or status if stated. If it is an injury or a problem of one body part (a joint, muscle, tendon, ligament, bone or the spine), also give bodyRegion (from the list) and side (if stated).
 - imaging: one per impression or conclusion; name: the scan and body part (e.g. "MRI right elbow"); detail: the finding in the report's words.
 - procedure: surgeries, injections, therapies done; allergy: allergies stated.
 range: the reference range exactly as printed, including every band when there are several.
@@ -141,6 +141,8 @@ evidence: the exact printed words the fact came from (the row or phrase, up to a
                   range: str('The reference range as printed, all of it (e.g. "Deficiency <20; Insufficiency 20-30; Sufficiency 30-100").'),
                   flag: str(undefined, { enum: FACT_FLAGS }),
                   detail: str(),
+                  bodyRegion: str('For a condition of one body part.', { enum: BODY_REGION_VALUES }),
+                  side: str(undefined, { enum: FACT_SIDES }),
                   evidence: str('The exact printed words, at most about 100 characters.'),
                 },
                 ['kind', 'name', 'evidence'],

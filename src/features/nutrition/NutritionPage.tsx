@@ -7,6 +7,7 @@ import { alive, save, softDelete } from '../../db/repo'
 import { ENTRY_INSET, EntryRow } from '../../components/EntryRow'
 import { MLink } from '../../components/MLink'
 import { GlassButton, Group, IconTile, NavBar, Section } from '../../components/ui'
+import { weightKg } from '../../lib/constants'
 import { daysAgo, startOfDay } from '../../lib/dates'
 import { haptic } from '../../lib/haptics'
 import { dailyProtein, grams, slotFor } from '../../lib/nutrition'
@@ -178,7 +179,7 @@ function GoalSection({ field, title, unit, target, footer }: {
   const weight = useLiveQuery(async () => (await db.measurements.where('kind').equals('weight').toArray()).filter(alive).sort((a, b) => b.recordedAt - a.recordedAt)[0], [])
   const shown = value ?? (target ? String(target) : '')
   const typed = parseFloat(shown)
-  const kg = weight?.unit === 'kg' ? weight.value : undefined
+  const kg = weightKg(weight)
   const name = title.replace('Daily ', '').toLowerCase()
 
   async function commit() {

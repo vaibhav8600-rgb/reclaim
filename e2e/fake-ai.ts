@@ -38,7 +38,7 @@ export const ANSWERS: { [T in AiTask]: AiOutput<T> } = {
       // A range too complex to trust: the report's own flag is kept.
       { kind: 'lab', name: 'Vitamin B12', value: 190, unit: 'pg/mL', range: 'Deficient < 200, Normal 200 - 900', flag: 'low', evidence: 'Vitamin B12 190 pg/mL L' },
       { kind: 'lab', name: 'Urine pus cells', detail: 'Occasional', evidence: 'Pus cells: Occasional /hpf' },
-      { kind: 'condition', name: 'Lateral epicondylitis', detail: 'Right side', evidence: 'Impression: right lateral epicondylitis' },
+      { kind: 'condition', name: 'Lateral epicondylitis', detail: 'Right side', bodyRegion: 'Elbow', side: 'right', evidence: 'Impression: right lateral epicondylitis' },
       { kind: 'medication', name: 'Cholecalciferol 60,000 IU', detail: 'Once a week for 8 weeks', evidence: 'Tab. Cholecalciferol 60K IU weekly x 8 wks' },
     ],
   },

@@ -3,7 +3,8 @@ import { useParams, useSearchParams } from 'react-router'
 import { FACT_KINDS } from '../../../shared/ai'
 import { db, type HealthFact } from '../../db/db'
 import { restore, save, softDelete } from '../../db/repo'
-import { Chips, DateRow, Field, Group, Row } from '../../components/ui'
+import { Chips, DateRow, Field, Group, PickerRow, Row } from '../../components/ui'
+import { BODY_REGIONS } from '../../lib/constants'
 import { dayKey, formatMediumDate, fromDayKey } from '../../lib/dates'
 import { rangeFlag } from '../../lib/facts'
 import { useBack, useGo } from '../../lib/nav'
@@ -11,7 +12,7 @@ import { toast } from '../../lib/toast'
 import { DeleteRow, SheetForm } from '../log/shared'
 import { FACT_KIND_INFO } from './kinds'
 
-type Draft = Pick<HealthFact, 'kind' | 'name' | 'unit' | 'range' | 'flag' | 'detail' | 'date'> & { value: string }
+type Draft = Pick<HealthFact, 'kind' | 'name' | 'unit' | 'range' | 'flag' | 'detail' | 'date' | 'bodyRegion' | 'side'> & { value: string }
 
 const FLAGS = [
   { value: 'none' as const, label: 'In Range' },
@@ -69,6 +70,8 @@ export function FactFormPage() {
       range: (numeric && draft.range?.trim()) || undefined,
       flag: numeric ? draft.flag : undefined,
       detail: draft.detail?.trim() || undefined,
+      bodyRegion: draft.kind === 'condition' ? draft.bodyRegion : undefined,
+      side: draft.kind === 'condition' && draft.bodyRegion ? draft.side : undefined,
       date: draft.date,
     }
     if (existing) {
@@ -123,6 +126,20 @@ export function FactFormPage() {
               <Chips wrap options={FLAGS} value={draft.flag ?? 'none'} onChange={(v) => setDraft((d) => ({ ...d, flag: v === 'none' ? undefined : v }))} />
             </div>
           )}
+        </div>
+      )}
+
+      {draft.kind === 'condition' && (
+        <div>
+          <Group>
+            <PickerRow label="Body Part" value={draft.bodyRegion} placeholder="Not one body part" options={BODY_REGIONS.map((r) => ({ value: r, label: r }))} onChange={(v) => set('bodyRegion', v)} />
+          </Group>
+          {draft.bodyRegion && (
+            <div className="mt-3">
+              <Chips options={[{ value: 'left' as const, label: 'Left' }, { value: 'right' as const, label: 'Right' }, { value: 'both' as const, label: 'Both' }]} value={draft.side} onChange={(v) => set('side', v)} />
+            </div>
+          )}
+          <p className="section-footer">A condition of one body part can be added as an injury to track, and gets a recovery plan.</p>
         </div>
       )}
 

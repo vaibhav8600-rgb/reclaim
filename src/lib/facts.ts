@@ -34,3 +34,36 @@ export function factValue(f: Pick<HealthFact, 'value' | 'unit' | 'detail'>) {
   if (f.value === undefined) return `${f.detail ?? ''}${f.detail && f.unit ? ` ${f.unit}` : ''}`
   return `${+f.value.toFixed(3)}${f.unit ? ` ${f.unit}` : ''}`
 }
+
+export interface InjurySuggestion {
+  key: string
+  name: string
+  bodyRegion: string
+  side: 'left' | 'right' | 'both' | 'none'
+  /** The earliest record of it. */
+  since: string
+  detail?: string
+}
+
+const sidesOverlap = (a?: string, b?: string) => !a || !b || a === b || a === 'both' || b === 'both' || a === 'none' || b === 'none'
+export const suggestionKey = (f: Pick<HealthFact, 'name' | 'bodyRegion' | 'side'>) => `${factKey(f.name)}|${f.bodyRegion}|${f.side ?? ''}`
+
+/**
+ * Conditions of one body part in the records that aren't tracked as an injury yet (none in the same region and
+ * side, current or resolved): offered as injuries to add, so a plan can be built for them. Never added unasked.
+ */
+export function injurySuggestions(facts: HealthFact[], injuries: { bodyRegion: string; side: string; deletedAt?: number }[], dismissed: string[] = []): InjurySuggestion[] {
+  const groups = new Map<string, HealthFact[]>()
+  for (const f of facts) {
+    if (f.deletedAt || f.kind !== 'condition' || !f.bodyRegion || f.bodyRegion === 'Other') continue
+    groups.set(suggestionKey(f), [...(groups.get(suggestionKey(f)) ?? []), f])
+  }
+  return [...groups].flatMap(([key, group]) => {
+    const byDate = [...group].sort((a, b) => a.date.localeCompare(b.date))
+    const first = byDate[0]
+    const latest = byDate[byDate.length - 1]
+    if (dismissed.includes(key)) return []
+    if (injuries.some((i) => !i.deletedAt && i.bodyRegion === first.bodyRegion && sidesOverlap(i.side, first.side))) return []
+    return [{ key, name: latest.name, bodyRegion: first.bodyRegion!, side: first.side ?? 'none', since: first.date, detail: latest.detail }]
+  })
+}

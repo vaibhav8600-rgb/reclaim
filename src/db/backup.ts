@@ -144,6 +144,8 @@ const schemas = {
     date: z.string(),
     documentId: z.string().optional(),
     evidence: z.string().optional(),
+    bodyRegion: z.string().optional(),
+    side: z.enum(['left', 'right', 'both']).optional(),
     source,
   }),
   water: z.object({ ...base, amount: z.number().min(0).max(5000), recordedAt: z.number(), source }),
