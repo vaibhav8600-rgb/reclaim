@@ -8,7 +8,7 @@ import { isOpenInjury, useEntries, useInjuries, useInjuryMap, useMeals, useMeta,
 import { alive, setMeta } from '../../db/repo'
 import { ENTRY_INSET, EntryRow } from '../../components/EntryRow'
 import { PainChart } from '../../components/PainChart'
-import { EmptyState, GlassButton, Group, NavBar, Section, SeverityBadge, Tip } from '../../components/ui'
+import { Avatar, EmptyState, GlassButton, Group, NavBar, Section, SeverityBadge, Tip } from '../../components/ui'
 import { kindInfo, severityWord } from '../../lib/constants'
 import { daysAgo, formatLongDate, relativeAge, startOfDay } from '../../lib/dates'
 import { GOOGLE_CLIENT_ID } from '../../lib/google'
@@ -39,7 +39,7 @@ export function TodayPage() {
         subtitle={formatLongDate(Date.now())}
         trailing={
           <GlassButton label="Profile and settings" to="/settings">
-            {initial ? <span className="font-rounded text-[1.0625rem]">{initial}</span> : <UserRound size={21} />}
+            {profile?.photo ? <span className="-mx-2.5"><Avatar photo={profile.photo} size={44} /></span> : initial ? <span className="font-rounded text-[1.0625rem]">{initial}</span> : <UserRound size={21} />}
           </GlassButton>
         }
       />

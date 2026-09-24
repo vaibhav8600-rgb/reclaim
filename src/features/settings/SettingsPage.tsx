@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Cloud, Download, FileUp, HardDrive, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Trash2, UserRound } from 'lucide-react'
+import { Camera, Cloud, Download, FileUp, HardDrive, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Trash2 } from 'lucide-react'
 import type { AiHealth } from '../../../shared/ai'
 import { AiConsentSheet } from '../../components/ai'
 import { aiHealth, setAiConsent, type AiConsent } from '../../lib/ai'
 import { db, DATA_TABLES, type DataTable } from '../../db/db'
 import { useMeta, useProfile } from '../../db/hooks'
-import { alive, save } from '../../db/repo'
+import { alive, notifyLocalChange, save } from '../../db/repo'
 import { applyImport, buildBackupFile, deleteEverything, markBackedUp, planImport, type ImportPlan } from '../../db/backup'
-import { Group, IconTile, NavBar, Row, Section, Toggle } from '../../components/ui'
+import { Avatar, Group, IconTile, NavBar, Row, Section, Segmented, Toggle } from '../../components/ui'
 import { formatWhen, relativeAge } from '../../lib/dates'
-import { formatBytes, isIOS, isStandalone, isTouch, requestPersistence, storageStatus } from '../../lib/platform'
+import { formatBytes, isIOS, isStandalone, isTouch, requestPersistence, squarePhoto, storageStatus } from '../../lib/platform'
+import { getTheme, setTheme, type Theme } from '../../lib/theme'
 import { toast } from '../../lib/toast'
 import { cachedToken, forgetToken, GOOGLE_CLIENT_ID, prepareGoogle, requestToken } from '../../lib/google'
 import { deleteDriveData, signOut, syncNow, useSyncStatus, type DriveLink } from '../../lib/sync'
@@ -44,6 +45,7 @@ export function SettingsPage() {
     <div className="space-y-7 pb-6">
       <NavBar title="Settings" back="/" />
       <ProfileSection />
+      <AppearanceSection />
       <DriveSection />
       <AiSection />
       <BackupSection />
@@ -68,17 +70,54 @@ function ProfileSection() {
     toast('Profile saved')
   }
 
+  const photoInput = useRef<HTMLInputElement>(null)
+
+  async function pickPhoto(file?: File) {
+    if (!file) return
+    try {
+      const photo = await squarePhoto(file)
+      await save(db.profile, { id: 'me', name: profile?.name ?? '', photo })
+      toast('Photo updated')
+    } catch {
+      toast('That photo couldn’t be opened')
+    }
+    if (photoInput.current) photoInput.current.value = ''
+  }
+
   return (
     <Section footer="Used for greetings and on reports you share with your clinician.">
       <div className="card flex items-center gap-4 p-4">
-        <span className="font-rounded flex h-15 w-15 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#9aa0a6] to-[#6d7278] text-[1.75rem] font-semibold text-white">
-          {initial ?? <UserRound size={30} />}
-        </span>
+        <input ref={photoInput} type="file" accept="image/*" className="hidden" onChange={(e) => pickPhoto(e.target.files?.[0])} aria-label="Profile photo" />
+        <button type="button" onClick={() => photoInput.current?.click()} className="relative shrink-0 rounded-full active:opacity-70" aria-label={profile?.photo ? 'Change photo' : 'Add photo'}>
+          <Avatar photo={profile?.photo} initial={initial} size={60} />
+          <span className="absolute -right-0.5 -bottom-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-accent text-accent-ink"><Camera size={12} strokeWidth={2.6} /></span>
+        </button>
         <label className="min-w-0 flex-1">
           <span className="block text-[0.8125rem] text-muted">Your name</span>
           <input className="w-full bg-transparent text-[1.25rem] font-semibold outline-none placeholder:text-faint" value={value} onChange={(e) => setName(e.target.value)} onBlur={commit} placeholder="Add your name" autoComplete="given-name" />
         </label>
       </div>
+      {profile?.photo && (
+        <button type="button" className="mt-2 px-1 text-[0.9375rem] text-danger" onClick={() => save(db.profile, { id: 'me', name: profile.name, photo: undefined }).then(() => toast('Photo removed'))}>
+          Remove Photo
+        </button>
+      )}
+    </Section>
+  )
+}
+
+function AppearanceSection() {
+  const [theme, set] = useState<Theme>(getTheme)
+  return (
+    <Section title="Appearance" footer={theme === 'system' ? 'Follows your iPhone’s Light or Dark setting.' : undefined}>
+      <Segmented
+        options={[{ value: 'system' as const, label: 'System' }, { value: 'light' as const, label: 'Light' }, { value: 'dark' as const, label: 'Dark' }]}
+        value={theme}
+        onChange={(t) => {
+          setTheme(t)
+          set(t)
+        }}
+      />
     </Section>
   )
 }
@@ -95,7 +134,7 @@ function DriveSection() {
 
   function syncTapped() {
     const token = cachedToken()
-    const run = (t: string) => syncNow(t).then(() => toast('Synced with Google Drive')).catch(() => {})
+    const run = (t: string) => syncNow(t, true).then(() => toast('Synced with Google Drive')).catch(() => {})
     if (token) void run(token)
     else requestToken(link?.email).then(run, (e: Error) => toast(e.message))
   }
@@ -301,6 +340,7 @@ function RestoreSection() {
     setBusy(true)
     try {
       await applyImport(plan!)
+      notifyLocalChange() // a restored backup reaches Drive like any edit
       toast('Backup restored')
       setPlan(undefined)
     } catch (e) {
@@ -315,7 +355,7 @@ function RestoreSection() {
 
   return (
     <Section title="Restore" footer="Merges a backup into this iPhone. New entries are added; an entry is only replaced if the backup has a more recent edit.">
-      <input ref={input} type="file" accept="application/json,.json" className="hidden" onChange={(e) => pick(e.target.files?.[0])} />
+      <input ref={input} type="file" accept="application/json,.json" className="hidden" onChange={(e) => pick(e.target.files?.[0])} aria-label="Backup file" />
       {!plan ? (
         <Group inset={TILE_INSET}>
           <Row icon={<IconTile icon={FileUp} color="indigo" />} title="Choose Backup File…" tone="accent" onClick={() => input.current?.click()} />
@@ -410,6 +450,7 @@ function DemoDataSection() {
     try {
       const { generateDemoData } = await import('../../../e2e/fixtures/demo-data')
       await applyImport(await planImport(JSON.stringify(generateDemoData())))
+      notifyLocalChange()
       toast('Demo data loaded')
     } finally {
       setBusy(false)

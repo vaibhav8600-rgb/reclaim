@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* `dark:` follows the theme chosen in Settings (data-theme), not only the system setting. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /*
  * Reclaim — follows Apple's Human Interface Guidelines (iOS 26 "Liquid Glass").
@@ -46,44 +48,43 @@
   --nav-bg: rgb(242 242 247 / 0.72);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --color-bg: #000000;
-    --color-surface: #1c1c1e;
-    --color-surface-2: #2c2c2e;
-    --color-fill: rgb(118 118 128 / 0.24);
-    --color-line: #38383a;
-    --color-ink: #ffffff;
-    --color-muted: #98989f;
-    --color-faint: #7c7c82;
-    --color-accent: #3dd2bf;
-    --color-accent-ink: #00221e;
-    --color-accent-soft: #0f302c;
-    --color-danger: #ff453a;
+/* Dark tokens follow data-theme, set before first paint by public/theme.js (System, Light or Dark in Settings). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #000000;
+  --color-surface: #1c1c1e;
+  --color-surface-2: #2c2c2e;
+  --color-fill: rgb(118 118 128 / 0.24);
+  --color-line: #38383a;
+  --color-ink: #ffffff;
+  --color-muted: #98989f;
+  --color-faint: #7c7c82;
+  --color-accent: #3dd2bf;
+  --color-accent-ink: #00221e;
+  --color-accent-soft: #0f302c;
+  --color-danger: #ff453a;
 
-    --color-tile-pink: #ff375f;
-    --color-tile-blue: #0a84ff;
-    --color-tile-orange: #ff9f0a;
-    --color-tile-indigo: #5e5ce6;
-    --color-tile-gray: #8e8e93;
-    --color-tile-green: #30d158;
-    --color-tile-purple: #bf5af2;
+  --color-tile-pink: #ff375f;
+  --color-tile-blue: #0a84ff;
+  --color-tile-orange: #ff9f0a;
+  --color-tile-indigo: #5e5ce6;
+  --color-tile-gray: #8e8e93;
+  --color-tile-green: #30d158;
+  --color-tile-purple: #bf5af2;
 
-    --color-sev-0: #2c2c2e;
-    --color-sev-0-ink: #98989f;
-    --color-sev-1: #4a2f26;
-    --color-sev-1-ink: #f6ddd3;
-    --color-sev-2: #95503a;
-    --color-sev-2-ink: #fff3ee;
-    --color-sev-3: #ec7c5f;
-    --color-sev-3-ink: #2a0e06;
+  --color-sev-0: #2c2c2e;
+  --color-sev-0-ink: #98989f;
+  --color-sev-1: #4a2f26;
+  --color-sev-1-ink: #f6ddd3;
+  --color-sev-2: #95503a;
+  --color-sev-2-ink: #fff3ee;
+  --color-sev-3: #ec7c5f;
+  --color-sev-3-ink: #2a0e06;
 
-    --glass-bg: rgb(44 44 48 / 0.58);
-    --glass-edge: rgb(255 255 255 / 0.14);
-    --glass-shadow: 0 10px 30px rgb(0 0 0 / 0.55);
-    --nav-bg: rgb(0 0 0 / 0.66);
-  }
+  --glass-bg: rgb(44 44 48 / 0.58);
+  --glass-edge: rgb(255 255 255 / 0.14);
+  --glass-shadow: 0 10px 30px rgb(0 0 0 / 0.55);
+  --nav-bg: rgb(0 0 0 / 0.66);
 }
 
 /* 17px body like iOS; on Apple devices this follows the user's Dynamic Type text size. */

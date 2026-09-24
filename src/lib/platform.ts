@@ -28,3 +28,12 @@ export function formatBytes(n?: number) {
   if (n < 1024 ** 3) return `${(n / 1024 ** 2).toFixed(1)} MB`
   return `${(n / 1024 ** 3).toFixed(1)} GB`
 }
+
+/** A photo cropped to a centred square and shrunk to `side` px, as a JPEG data URL (small enough to sync). */
+export async function squarePhoto(file: Blob, side = 256): Promise<string> {
+  const bitmap = await createImageBitmap(file)
+  const crop = Math.min(bitmap.width, bitmap.height)
+  const canvas = Object.assign(document.createElement('canvas'), { width: side, height: side })
+  canvas.getContext('2d')!.drawImage(bitmap, (bitmap.width - crop) / 2, (bitmap.height - crop) / 2, crop, crop, 0, 0, side, side)
+  return canvas.toDataURL('image/jpeg', 0.85)
+}

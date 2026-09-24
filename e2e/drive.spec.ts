@@ -187,3 +187,23 @@ test('delete everything removes this device’s data and the Drive backups: a tr
   await expect(page.getByText('What are you recovering from?')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Restore from Google Drive' })).toHaveCount(0)
 })
+
+test('background sync uploads only when something changed; returning to the app just checks', async ({ browser }, info) => {
+  test.slow()
+  const drive = new FakeDrive()
+  const page = await newDevice(browser, info, drive)
+  await importBackup(page, injuriesBackup('Tennis elbow'))
+  await connectDrive(page, PASS)
+  expect(drive.snapshots()).toHaveLength(1)
+
+  // Coming back to the app with nothing new: no new snapshot.
+  await tab(page, 'Today').click() // in-app navigation: the Google sign-in stays in memory
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+  await page.waitForTimeout(3000)
+  expect(drive.snapshots()).toHaveLength(1)
+
+  // An edit goes up by itself a few seconds later.
+  await page.getByRole('button', { name: 'Quick log' }).click()
+  await page.getByRole('dialog', { name: 'Quick log' }).getByRole('radio', { name: '3', exact: true }).click()
+  await expect.poll(() => drive.snapshots().length, { timeout: 30_000 }).toBe(2)
+})

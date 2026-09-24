@@ -22,6 +22,8 @@ export interface Profile extends Base {
   proteinTarget?: number
   /** Daily water goal in ml. */
   waterTarget?: number
+  /** Profile photo: a small square JPEG, as a data URL. */
+  photo?: string
 }
 
 export interface Injury extends Base {

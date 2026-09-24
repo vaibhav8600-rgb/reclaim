@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Info, Plus, Utensils } from 'lucide-react'
 import { db, type SavedMeal } from '../../db/db'
 import { useInjuryMap, useMeals, useProfile, useSavedMeals, useWater } from '../../db/hooks'
-import { alive, save } from '../../db/repo'
+import { alive, save, softDelete } from '../../db/repo'
 import { ENTRY_INSET, EntryRow } from '../../components/EntryRow'
 import { MLink } from '../../components/MLink'
 import { GlassButton, Group, IconTile, NavBar, Section } from '../../components/ui'
@@ -146,7 +146,7 @@ function SavedMealRow({ meal }: { meal: SavedMeal }) {
     const now = Date.now()
     const id = await save(db.meals, { name: meal.name, slot: slotFor(now), protein: meal.protein, calories: meal.calories, items: meal.items, recordedAt: now, source: 'user' })
     await save(db.savedMeals, { ...meal }) // most recently used first
-    toast(`${meal.name} · ${grams(meal.protein)} protein logged`, { label: 'Undo', onClick: () => db.meals.delete(id) })
+    toast(`${meal.name} · ${grams(meal.protein)} protein logged`, { label: 'Undo', onClick: () => softDelete(db.meals, id) })
   }
   return (
     <div className="flex items-center">

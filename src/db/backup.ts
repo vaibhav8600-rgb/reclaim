@@ -20,7 +20,7 @@ const foodItem = z.object({ name: z.string(), amount: z.string().optional(), pro
 const side = z.enum(['left', 'right', 'both', 'none'])
 
 const schemas = {
-  profile: z.object({ ...base, name: z.string(), proteinTarget: z.number().min(0).max(1000).optional(), waterTarget: z.number().min(0).max(20_000).optional() }),
+  profile: z.object({ ...base, name: z.string(), proteinTarget: z.number().min(0).max(1000).optional(), waterTarget: z.number().min(0).max(20_000).optional(), photo: z.string().startsWith('data:image/').max(400_000).optional() }),
   injuries: z.object({
     ...base,
     name: z.string(),
