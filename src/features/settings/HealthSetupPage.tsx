@@ -4,10 +4,8 @@ import { db } from '../../db/db'
 import { restore, save } from '../../db/repo'
 import { NavBar, Section } from '../../components/ui'
 import { activityId } from '../../lib/daily'
-import { isEmptyImport, parseHealthExport, type HealthImport } from '../../lib/healthImport'
+import { isEmptyImport, parseHealthExport, RUN_SHORTCUT, type HealthImport } from '../../lib/healthImport'
 import { toast } from '../../lib/toast'
-
-const SHORTCUT = 'Reclaim Health'
 
 /** Save what the Shortcut copied. Deterministic ids: importing the same data twice changes nothing. */
 async function apply(h: HealthImport) {
@@ -42,14 +40,12 @@ const describe = (h: HealthImport) =>
   ].filter(Boolean).join(' · ')
 
 const STEPS: { title: string; body: string }[] = [
-  { title: 'Create the Shortcut', body: `Open the Shortcuts app → + → name it “${SHORTCUT}” (exactly, so Reclaim can start it).` },
-  { title: 'Steps', body: 'Add “Find Health Samples”: Type Steps, Start Date is in the last 7 days, Group By Day. Add “Repeat with Each”, and inside it a “Text” action: steps;[Repeat Item → Start Date, Custom format yyyy-MM-dd];[Repeat Item → Value]. After End Repeat, add “Combine Text”: Repeat Results, New Lines.' },
-  { title: 'Weight (optional)', body: 'The same with Type Weight, last 30 days, no grouping, and the text: weight;[Start Date, format yyyy-MM-dd HH:mm];[Value];[Unit].' },
-  { title: 'Sleep (optional)', body: 'The same with Type Sleep, last 7 days, no grouping, and the text: sleep;[Start Date, yyyy-MM-dd HH:mm];[End Date, yyyy-MM-dd HH:mm];[Value]. Time in bed and awake time are ignored.' },
-  { title: 'Copy it', body: 'Add a “Text” action with each Combined Text on its own line, then “Copy to Clipboard”. Run it once and allow access to Health.' },
+  { title: 'Make a new Shortcut', body: 'Open the Shortcuts app → + → tap the name at the top → Rename → Reclaim Health (exactly, so Reclaim can start it).' },
+  { title: 'Find today’s steps', body: 'Add Action → search “Find Health Samples”. Set Type to Steps, Start Date to “is today”, and Group By to Day.' },
+  { title: 'Copy them', body: 'Add Action → search “Copy to Clipboard”. Tap ▶ once and allow access to Steps. Done — just two actions.' },
 ]
 
-/** Steps, weight and sleep from Apple Health: an iPhone Shortcut copies them, Reclaim pastes them. */
+/** Steps from Apple Health: a two-action iPhone Shortcut copies them, Reclaim pastes them. */
 export function HealthSetupPage() {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -80,16 +76,8 @@ export function HealthSetupPage() {
 
   return (
     <div className="space-y-7 pb-4">
-      <NavBar title="Apple Health" subtitle="Steps, weight and sleep" back="/settings" />
-      <Section footer="Same data twice changes nothing; entries you deleted stay deleted; nights you logged by hand aren’t doubled.">
-        <div className="card space-y-3 p-4">
-          <a className="btn btn-soft w-full" href={`shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT)}`}><Play size={18} /> 1. Run the Shortcut</a>
-          <button type="button" className="btn btn-primary w-full" onClick={paste} disabled={busy}><ClipboardPaste size={18} /> 2. Paste from Apple Health</button>
-          <textarea className="input min-h-20 text-[0.875rem]" aria-label="Apple Health data" value={text} onChange={(e) => setText(e.target.value)} placeholder="Or paste here by hand" />
-          {text.trim() && <button type="button" className="btn btn-soft w-full" onClick={() => importText(text)} disabled={busy}>Import</button>}
-        </div>
-      </Section>
-      <Section title="Set Up the Shortcut (once)" footer="Web apps can’t read Apple Health directly — only App Store apps can. A Shortcut can, and copies the numbers for Reclaim. After running it, switch back to Reclaim and tap Paste.">
+      <NavBar title="Apple Health" subtitle="Your steps, from your iPhone" back="/settings" />
+      <Section title="Set Up the Shortcut (once)" footer="Web apps can’t read Apple Health directly — only App Store apps can. The Shortcut reads today’s steps and copies them for Reclaim.">
         <ol className="space-y-3">
           {STEPS.map((s, i) => (
             <li key={s.title} className="card flex gap-3 p-4">
@@ -101,6 +89,14 @@ export function HealthSetupPage() {
             </li>
           ))}
         </ol>
+      </Section>
+      <Section title="Try It" footer="Each day it’s quicker from Today: tap Steps → Get from Health → come back → Paste → Save. Importing the same day twice changes nothing.">
+        <div className="card space-y-3 p-4">
+          <a className="btn btn-soft w-full" href={RUN_SHORTCUT}><Play size={18} /> 1. Run the Shortcut</a>
+          <button type="button" className="btn btn-primary w-full" onClick={paste} disabled={busy}><ClipboardPaste size={18} /> 2. Paste from Apple Health</button>
+          <textarea className="input min-h-20 text-[0.875rem]" aria-label="Apple Health data" value={text} onChange={(e) => setText(e.target.value)} placeholder="Or paste here by hand" />
+          {text.trim() && <button type="button" className="btn btn-soft w-full" onClick={() => importText(text)} disabled={busy}>Import</button>}
+        </div>
       </Section>
     </div>
   )

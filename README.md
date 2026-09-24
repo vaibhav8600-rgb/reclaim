@@ -33,11 +33,11 @@ The service worker (offline mode) and reliable storage need HTTPS, so deploy it:
 
 ## Apple Health (optional)
 
-A web app can’t read Apple Health directly, so an iPhone Shortcut reads steps, exercise minutes, weight and sleep
-and copies them. In **Settings → Apple Health**, tap **Run the Shortcut**, switch back, then **Paste from Apple
-Health**. (Copy and paste, not a link: a Shortcut can only open Safari, which keeps separate storage from the Home
-Screen app.) The page has the steps to build the Shortcut, about 10 minutes once. Imports are idempotent: the same
-data twice changes nothing, deleted entries stay deleted, and nights you logged by hand aren’t doubled.
+A web app can’t read Apple Health directly, so a two-action iPhone Shortcut (Find Health Samples: Steps, today,
+grouped by day → Copy to Clipboard) copies today’s steps. **Settings → Apple Health** shows how to build it (about
+2 minutes, once). Each day: Today → Steps → **Get from Health** → come back → **Paste** → Save. (Copy and paste, not
+a link: a Shortcut can only open Safari, which keeps separate storage from the Home Screen app.) The Settings page
+also imports a longer line format with several days, weight and sleep (see `src/lib/healthImport.ts`).
 
 ## Google Drive backup (optional)
 
