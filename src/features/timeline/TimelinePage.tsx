@@ -13,6 +13,8 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'measurement', label: 'Measurements' },
   { value: 'session', label: 'Rehab' },
   { value: 'meal', label: 'Meals' },
+  { value: 'sleep', label: 'Sleep' },
+  { value: 'activity', label: 'Activity' },
   { value: 'note', label: 'Notes' },
   { value: 'document', label: 'Records' },
   { value: 'injury', label: 'Injuries' },

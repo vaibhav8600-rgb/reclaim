@@ -6,7 +6,7 @@
  *
  * Timestamps are relative to `now` in the local timezone. Nothing is ever in the future.
  */
-import type { Drink, Exercise, FoodItem, HealthFact, Injury, JournalEntry, Meal, MealSlot, Measurement, Prescription, Profile, RehabSession, SavedMeal, SessionItem, Symptom } from '../../src/db/db'
+import type { Activity, Drink, Exercise, FoodItem, HealthFact, Injury, JournalEntry, Meal, MealSlot, Measurement, Prescription, Profile, RehabSession, SavedMeal, SessionItem, Sleep, Symptom } from '../../src/db/db'
 
 export interface DemoBackup {
   app: 'reclaim'
@@ -25,6 +25,8 @@ export interface DemoBackup {
     savedMeals: SavedMeal[]
     facts: HealthFact[]
     water: Drink[]
+    sleep: Sleep[]
+    activity: Activity[]
   }
 }
 
@@ -83,7 +85,7 @@ export function generateDemoData({ now = Date.now(), seed = 7 }: { now?: number;
   const stamp = (t: number) => ({ createdAt: t, updatedAt: t })
   const past = (t: number) => t <= now - 60_000
 
-  const profile: Profile[] = [{ id: 'me', name: 'Alex', proteinTarget: 130, waterTarget: 2500, ...stamp(at(75, 9)) }]
+  const profile: Profile[] = [{ id: 'me', name: 'Alex', proteinTarget: 130, waterTarget: 2500, height: 178, weightGoal: 80, stepsTarget: 8000, sleepTarget: 7.5, calorieTarget: 2200, fiberTarget: 30, sex: 'male', birthYear: 1994, activity: 'light', weightPlan: 'lose', diet: 'non-vegetarian', ...stamp(at(75, 9)) }]
 
   const injuries: Injury[] = [
     {
@@ -271,10 +273,22 @@ export function generateDemoData({ now = Date.now(), seed = 7 }: { now?: number;
     fact({ kind: 'lab', name: 'CRP', value: 2.1, unit: 'mg/L', range: '< 5', evidence: 'C-Reactive Protein 2.1 mg/L' }, 5),
   ]
 
+  // Two weeks of sleep (bed around 23:30, waking around 07:00) and steps.
+  const sleep: Sleep[] = []
+  const activity: Activity[] = []
+  for (let d = 13; d >= 0; d--) {
+    const wake = at(d, 6, 30 + Math.floor(rand() * 60))
+    if (past(wake)) sleep.push({ id: id('sleep'), bedAt: wake - (6 + rand() * 2.2) * 3_600_000, wakeAt: wake, quality: 1 + Math.floor(rand() * 4), source: 'user', ...stamp(wake + 600_000) })
+    if (d > 0) {
+      const day = dateKey(d)
+      activity.push({ id: `activity-${day}`, date: day, steps: 4000 + Math.floor(rand() * 7000), activeMinutes: 20 + Math.floor(rand() * 50), source: 'user', ...stamp(at(d, 21)) })
+    }
+  }
+
   return {
     app: 'reclaim',
     schemaVersion: 1,
     exportedAt: new Date(now).toISOString(),
-    data: { profile, injuries, symptoms, measurements, journal, exercises: [], prescriptions, sessions, meals, savedMeals, facts, water },
+    data: { profile, injuries, symptoms, measurements, journal, exercises: [], prescriptions, sessions, meals, savedMeals, facts, water, sleep, activity },
   }
 }

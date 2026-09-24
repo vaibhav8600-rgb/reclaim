@@ -1,10 +1,11 @@
 import { memo } from 'react'
 import { MLink } from './MLink'
-import { Bandage, Dumbbell, NotebookPen, Ruler, Utensils } from 'lucide-react'
+import { Bandage, Dumbbell, Footprints, Moon, NotebookPen, Ruler, Utensils } from 'lucide-react'
 import type { Injury } from '../db/db'
 import type { Entry } from '../db/hooks'
 import { injuryPlace, kindInfo, sideLabel, symptomLabel, statusLabel } from '../lib/constants'
 import { formatTime } from '../lib/dates'
+import { formatHours, qualityLabel, sleepHours } from '../lib/daily'
 import { grams, slotLabel } from '../lib/nutrition'
 import { IconTile, SeverityBadge } from './ui'
 import { DocumentTile, kindOf } from '../features/documents/kinds'
@@ -76,6 +77,22 @@ export const EntryRow = memo(function EntryRow({ entry, injuries, hideInjury = f
       ].filter(Boolean).join(' · ')
       break
     }
+    case 'sleep': {
+      const s = entry.item
+      to = `/log/sleep?id=${s.id}`
+      icon = <span className="flex w-9 justify-center"><IconTile icon={Moon} color="indigo" /></span>
+      title = `Sleep ${formatHours(sleepHours(s))}`
+      detail = [qualityLabel(s.quality), `${formatTime(s.bedAt)}–${formatTime(s.wakeAt)}`, s.notes].filter(Boolean).join(' · ')
+      break
+    }
+    case 'activity': {
+      const a = entry.item
+      to = `/log/steps?date=${a.date}`
+      icon = <span className="flex w-9 justify-center"><IconTile icon={Footprints} color="green" /></span>
+      title = a.steps !== undefined ? `${a.steps.toLocaleString()} steps` : 'Activity'
+      detail = [a.activeMinutes !== undefined && `${a.activeMinutes} min active`, a.distance !== undefined && `${a.distance} km`].filter(Boolean).join(' · ')
+      break
+    }
     case 'injury': {
       const i = entry.item
       to = `/injuries/${i.id}`
@@ -93,7 +110,7 @@ export const EntryRow = memo(function EntryRow({ entry, injuries, hideInjury = f
         <p className="truncate font-medium">{title}</p>
         {detail && <p className="truncate text-[0.875rem] text-muted">{detail}</p>}
       </div>
-      {entry.kind !== 'injury' && entry.kind !== 'document' && <span className="shrink-0 text-[0.875rem] text-faint tabular-nums">{formatTime(entry.at)}</span>}
+      {entry.kind !== 'injury' && entry.kind !== 'document' && entry.kind !== 'activity' && <span className="shrink-0 text-[0.875rem] text-faint tabular-nums">{formatTime(entry.at)}</span>}
     </MLink>
   )
 })

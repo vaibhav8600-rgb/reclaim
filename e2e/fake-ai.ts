@@ -46,11 +46,19 @@ export const ANSWERS: { [T in AiTask]: AiOutput<T> } = {
     isFood: true,
     name: 'Chicken rice bowl',
     items: [
-      { name: 'Grilled chicken', amount: 'about 150 g', protein: 46, calories: 250 },
-      { name: 'White rice', amount: '1 cup cooked', protein: 4, calories: 210 },
-      { name: 'Broccoli', amount: '1 cup', protein: 3, calories: 30 },
+      { name: 'Grilled chicken', amount: 'about 150 g', protein: 46, calories: 250, carbs: 0, fat: 5, fiber: 0 },
+      { name: 'White rice', amount: '1 cup cooked', protein: 4, calories: 210, carbs: 45, fat: 0, fiber: 1 },
+      { name: 'Broccoli', amount: '1 cup', protein: 3, calories: 30, carbs: 6, fat: 0, fiber: 2 },
     ],
     assumptions: ['Chicken portion judged from a standard dinner plate.'],
+  },
+  'meal-ideas': {
+    ideas: [
+      { name: 'Paneer bhurji with 2 rotis', portion: '100 g paneer bhurji + 2 rotis', calories: 520, protein: 26, why: 'Covers most of the 30 g protein you still need, within your 600 kcal.' },
+      { name: 'Moong dal chilla with curd', portion: '2 chillas + 1 katori curd', calories: 380, protein: 22, why: 'High protein and fiber for under 400 kcal.' },
+      { name: 'Egg bhurji and salad', portion: '2 eggs + 1 bowl salad', calories: 240, protein: 14, why: 'A lighter option if you want room for a snack later.' },
+    ],
+    note: '',
   },
   'recovery-plan': {
     summary: 'Your tennis elbow has settled to around 2–3/10, so the plan keeps loading the tendon and adds forearm rotation. Your lower back stays on gentle mobility with some hip strength. This is a draft for your physio to check.',

@@ -1,6 +1,17 @@
 # Reclaim
 
-**Get back to your life.** A private, offline-first recovery journal (PWA) built for iPhone, following Apple’s Human Interface Guidelines (iOS 26 Liquid Glass). See [docs/PLAN.md](docs/PLAN.md) for the product plan and roadmap.
+**Get back to your life.** A private, offline-first health and recovery app (PWA) for iPhone, following Apple’s Human Interface Guidelines (iOS 26 Liquid Glass). Your data lives on the phone; AI helps on top of it and never replaces it. See [docs/PLAN.md](docs/PLAN.md) for the plan and roadmap.
+
+## What it does
+
+- **Today:** rings for calories, protein, water, steps and sleep against your goals, one-tap water, weight, pain, rehab, and your recovery plan. A one-minute first-run setup suggests starting goals.
+- **Nutrition:** meals with calories, protein, carbs, fat and fiber; a built-in list of ~110 common Indian and everyday foods with familiar portions; My Foods from nutrition labels; saved meals and recipes; AI estimates from a photo or description (checked before saving); AI meal ideas that fit what’s left of the day; a calorie goal worked out from your profile.
+- **Daily basics:** sleep, steps, weight with a chart, goal and BMI; everything in one Goals page. Steps, weight and sleep can come from **Apple Health** through an iPhone Shortcut.
+- **Recovery:** injuries, two-tap pain logs, symptoms, measurements, notes (AI turns a note into entries you review), a rehab plan with sessions, progress and a weekly check, and looping demonstrations of every library exercise.
+- **Medical records:** add many reports at once; AI reads each into lab results, medicines, diagnoses and scan findings (quoting the page) for you to review; a Health Profile with lab history and an overall summary; conditions from records offered as injuries to track.
+- **Recovery plan:** an AI draft that chooses only from a checked exercise library (each tied to a published clinical guideline), with doses kept in range and protein/water targets from fixed formulas.
+- **Insights:** a weekly summary, Ask about your own data, and a printable clinician report.
+- **Private by design:** everything on the phone; optional end-to-end encrypted Google Drive sync; AI only with your consent, only what a feature needs, never your name.
 
 ## Run locally
 
@@ -18,7 +29,14 @@ The service worker (offline mode) and reliable storage need HTTPS, so deploy it:
 1. Push this folder to a GitHub repo.
 2. On [vercel.com](https://vercel.com), **Add New → Project**, import the repo. Vercel detects Vite; no settings needed.
 3. Open the Vercel URL in **Safari** on the iPhone → **Share → Add to Home Screen**.
-4. Open it from the Home Screen icon. Your data lives on the phone; back it up from **Settings → Backup** (the share sheet offers Files and Google Drive).
+4. Open it from the Home Screen icon. Your data lives on the phone; back it up from **Settings → Backup** (the share sheet offers Files and Google Drive), or connect Google Drive for encrypted sync.
+
+## Apple Health (optional)
+
+A web app can’t read Apple Health directly, so an iPhone Shortcut reads steps, exercise minutes, weight and sleep
+and opens Reclaim with them. **Settings → Apple Health** has your personal import link and the steps to build the
+Shortcut (about 10 minutes, once), plus a daily automation so it runs on its own. Imports are idempotent: the same
+data twice changes nothing, deleted entries stay deleted, and nights you logged by hand aren’t doubled.
 
 ## Google Drive backup (optional)
 
@@ -33,7 +51,8 @@ Without it, the app works fully offline and Settings shows Google Drive as "Not 
 
 ## AI (optional)
 
-Notes → entries, document summaries, weekly summary, Ask, and the clinician report's AI section. It runs through
+Notes → entries, reading medical records into facts, the health overview, the recovery plan, meal estimates and
+meal ideas, the weekly summary, Ask, and the clinician report's AI section. It runs through
 `/api/ai` (a Vercel function; `npm run dev` serves it locally). Add to `.env.local`, **without** a `VITE_` prefix:
 
 ```
@@ -46,7 +65,9 @@ Details and how it's protected: [docs/AI_SETUP.md](docs/AI_SETUP.md).
 ## Try it with sample data
 
 Easiest: run `npm run dev`, open **Settings → Developer → Load Demo Data** (dev builds only). It adds ~75 days
-of realistic recovery data; **Delete All Data** at the bottom of Settings starts fresh again.
+of realistic data; **Delete Everything** at the bottom of Settings starts fresh again (it also offers to remove
+Google Drive backups). **Sign Out** backs up to Drive first, then clears the phone; **Restore from Google Drive**
+brings it all back.
 
 Or as a file, e.g. to try it on the phone:
 
@@ -85,9 +106,12 @@ shared/        AI contract shared by app and server
 src/
   db/          Dexie schema, save/soft-delete helpers, live-query hooks, backup/restore
   components/  Layout + tab bar, Quick Log sheet, charts, motion links, shared iOS-style UI
-  features/    today, rehab, timeline, injuries, documents, log (symptom/measurement/note), settings
-  lib/         crypto (E2E encryption), google (sign-in), drive (API), sync, rehab logic, exercise library,
-               dates, stats, transitions, platform, haptics, toast
+  features/    today, goals (goals, weight, welcome), nutrition (food picker, My Foods), health (records → facts,
+               review, lab history), plan (recovery plan), rehab (+ exercise animations), timeline, injuries,
+               documents, log (symptom, measurement, note, sleep, steps), insights, report, settings (+ Apple Health)
+  lib/         crypto (E2E encryption), google (sign-in), drive (API), sync, AI client and context, food list,
+               nutrition and calorie maths, health facts, recovery-plan rules and the checked exercise guide,
+               Apple Health import, daily (sleep/BMI), theme, dates, stats, transitions, platform, haptics, toast
 e2e/           Playwright specs, helpers, fake Google, demo-data generator
 ```
 

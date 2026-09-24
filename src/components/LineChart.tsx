@@ -15,8 +15,10 @@ const PAD = { top: 14, right: 38, bottom: 22, left: 26 }
  * Single-series line chart: 2px line that draws in, 10% area wash, hairline grid,
  * touch-and-drag crosshair with tooltip, latest value labelled at the end.
  */
-export function LineChart({ points, max, ticks, format = (v) => v.toFixed(1), startLabel, endLabel, summary, empty = 'Nothing logged yet' }: {
+export function LineChart({ points, min = 0, max, ticks, format = (v) => v.toFixed(1), startLabel, endLabel, summary, empty = 'Nothing logged yet' }: {
   points: ChartPoint[]
+  /** Bottom of the value axis (0 unless a range like body weight reads better from a floor). */
+  min?: number
   max: number
   ticks: number[]
   format?: (v: number) => string
@@ -42,11 +44,11 @@ export function LineChart({ points, max, ticks, format = (v) => v.toFixed(1), st
   const plotH = H - PAD.top - PAD.bottom
   const step = points.length > 1 ? plotW / (points.length - 1) : 0
   const x = (i: number) => (points.length > 1 ? PAD.left + i * step : PAD.left + plotW / 2)
-  const y = (v: number) => PAD.top + plotH - (Math.min(v, max) / max) * plotH
+  const y = (v: number) => PAD.top + plotH - ((Math.min(Math.max(v, min), max) - min) / (max - min || 1)) * plotH
 
   const data = points.map((p, i) => ({ ...p, i })).filter((p) => p.value !== null) as (ChartPoint & { i: number; value: number })[]
   const line = data.map((p, k) => `${k ? 'L' : 'M'}${x(p.i)},${y(p.value)}`).join('')
-  const area = data.length > 1 ? `${line}L${x(data[data.length - 1].i)},${y(0)}L${x(data[0].i)},${y(0)}Z` : ''
+  const area = data.length > 1 ? `${line}L${x(data[data.length - 1].i)},${y(min)}L${x(data[0].i)},${y(min)}Z` : ''
   const last = data[data.length - 1]
   const showAllDots = step >= 16
 
@@ -93,7 +95,7 @@ export function LineChart({ points, max, ticks, format = (v) => v.toFixed(1), st
         )}
         {h && (
           <g pointerEvents="none">
-            <line x1={x(h.i)} x2={x(h.i)} y1={PAD.top} y2={y(0)} stroke="var(--color-muted)" strokeWidth={1} />
+            <line x1={x(h.i)} x2={x(h.i)} y1={PAD.top} y2={y(min)} stroke="var(--color-muted)" strokeWidth={1} />
             <circle cx={x(h.i)} cy={y(h.value)} r={5} fill="var(--color-accent)" stroke="var(--color-surface)" strokeWidth={2} />
           </g>
         )}

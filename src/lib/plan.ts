@@ -1,5 +1,6 @@
 import type { Exercise, HealthFact, Injury, Prescription, RehabSession } from '../db/db'
 import { clampTo, EXERCISE_GUIDES, type ExerciseGuide } from './guide'
+import { suggestedCalories } from './nutrition'
 import { itemDone, plannedPerWeek } from './rehab'
 
 /**
@@ -80,4 +81,14 @@ export function weeklyCheck(p: Prescription, sessions: RehabSession[], now = Dat
   }
   if (avg !== undefined && avg <= 3 && done >= 0.7) return { verdict: 'progress', reason: `Done ${items.length} of ${plannedPerWeek(p)} times with pain around ${Math.round(avg)}/10.` }
   return { verdict: 'hold', reason: done < 0.7 ? `Done ${items.length} of ${plannedPerWeek(p)} planned times — keep going at this level.` : 'Keep going at this level.' }
+}
+
+/**
+ * Starting goals for a beginner, from published ranges: protein and water per kg (with the same holds as the
+ * recovery plan when records show kidney or heart problems), 8,000 steps, 8 hours of sleep. Only ever fills goals
+ * that aren't set yet.
+ */
+export function suggestedGoals(weightKg: number | undefined, facts: HealthFact[], profile: Parameters<typeof suggestedCalories>[0] = {}) {
+  const t = dailyTargets(weightKg, facts)
+  return { calorieTarget: suggestedCalories(profile, weightKg), proteinTarget: t.protein?.target, fiberTarget: 30, waterTarget: t.water?.target, stepsTarget: 8000, sleepTarget: 8 }
 }

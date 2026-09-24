@@ -54,7 +54,12 @@ No backend server, no Supabase, no .NET. Add infrastructure only when a phase ne
 3. **Honest charts.** Severity uses one warm hue light→dark with the number always printed; no traffic lights. Trends are shown as data, not verdicts.
 4. **Thumb-first.** The + log button and pain numbers sit in thumb reach; tap targets ≥ 44pt. Forms confirm with ✓ top-right, per Apple convention.
 5. **Your data.** Everything stays on the device, with visible backup status and nudges.
-6. **Light and dark** follow the system.
+6. **Light and dark** follow the system (or a fixed choice in Settings).
+7. **Beginner-friendly.** Every screen says what it's for in one line and has one obvious main action. Empty
+   screens teach what to do next. Sensible defaults (times prefilled, last unit remembered) so most logs are a
+   tap or two. Advanced fields stay out of the way until needed. Plain words, with medical terms explained.
+8. **One app, not a pile of features.** A feature earns its place only if it's used; new areas fold into the
+   existing structure (Today, Track, Health) instead of adding screens to wander through.
 
 ## Phases
 
@@ -68,7 +73,15 @@ No backend server, no Supabase, no .NET. Add infrastructure only when a phase ne
 | **0.6 Medical history** | Add many records at once (PDFs/photos); AI reads each (one at a time, free-tier friendly, resumes if interrupted), files it under the title, type and date printed on it, and extracts facts — conditions, medicines, allergies, lab results (value, unit, printed range), scan findings, procedures, vitals — each quoting the printed words. Facts join the **Health Profile** only after review; low/high worked out from simple printed ranges, otherwise the report's own flag. Lab history per test with chart; facts editable, deletable, or added by hand. Confirmed history goes into the AI context (weekly summary, Ask). **Water**: one-tap 250/500 ml on Today and Nutrition, daily goal (30–35 ml/kg guidance with a heart/kidney caveat) | ✅ built |
 | **0.7 Recovery plan** | Vetted library: each starter exercise has the injuries it suits, dose ranges, progression, cautions and the published guideline behind it (JOSPT CPGs, OARSI, pain-monitoring model). AI drafts a plan from the open injuries, pain trend, rehab so far and Health Profile, choosing **only** library exercises; the app drops anything else and clamps doses to the ranges. Protein (1.6 g/kg, ISSN) and water (~33 ml/kg, EFSA context) targets are computed, not AI, and held back when records show kidney disease, heart failure or a fluid restriction. Weekly check per exercise from logs (progress / keep going / ease off, pain-monitoring model). Safety rules, questions for the physio, full citations. Nothing changes until “Use This Plan” | ✅ built |
 | **0.8 Exercise animations** | Looping 2D demonstrations for all 24 starter exercises: one figure rig (side view, two-bone IK so hands and feet stay planted while the body moves), key poses per exercise with a caption per phase (“Lower slowly, 3–4 s”), the working part in the accent colour; custom views where side-on can’t show it (from above, behind, the front). On the exercise screen, in sessions (“How to”) and in the recovery plan. Pauses off screen or on tap; Reduce Motion shows the start and key positions still | ✅ built |
-| Later | Apple Health data via Shortcuts export, Web Push reminders, Capacitor wrapper, multi-device merge | |
+| **0.9 Daily basics** | Sleep (bed and wake times, quality) and steps / active minutes, logged by hand in a tap or two. Weight page: chart, goal, BMI from a height in the profile. One Goals page for every target (weight, protein, water, steps, sleep). Today opens with "at a glance" rings (protein, water, steps, sleep) and a first-run setup (name, height, weight, goals — all skippable). Quick Log gains Sleep, Steps and Weight. Sleep and steps on the timeline, in the weekly summary and Ask | ✅ built |
+| **0.10 Nutrition and Apple Health** | Calories, protein, carbs, fat, fiber (and sugar, sodium from labels) per food and meal; a built-in list of ~110 common Indian and everyday foods (per 100 g, familiar servings, marked approximate) with search, recents and portions; My Foods from nutrition labels; recipes that make several servings (one serving logged by default); AI estimates now include carbs, fat and fiber; a calorie goal from Mifflin–St Jeor × activity (−500 / +300, never below 1,200 / 1,500 kcal); carbs and fat guides from the calorie and protein goals; Today card with what's left; 7-day calories/protein chart and weekly stats; AI meal ideas that fit what's left, respect diet preference and flag records-related caveats; a fifth ring for calories. **Apple Health** through an iPhone Shortcut: steps, exercise minutes, weight and sleep (segments joined into nights), a review screen, a personal link that imports on its own, idempotent and respectful of deletions and hand-logged nights | ✅ built |
+| 0.11 Records+ and privacy | Several photos of one report read together as one record (multi-page scans), compared with the previous report of the same kind, with each finding's page; a medicines list from confirmed prescriptions; before every AI request, a preview of exactly what will be sent and what won't | |
+| 0.12 Fitness | A general exercise library (home and gym) alongside rehab, workout templates, logging with a rest timer, volume, duration and effort, personal bests and progress charts; demonstrations where the figure can show them | |
+| 0.13 Reports, export, navigation | A Sunday report across every area (nutrition, activity, sleep, weight, recovery); the doctor report as a PDF listing its attachments; export as a ZIP (data + documents) and CSV; tabs revisited (Home · Health · Track · AI · More) once the new areas are in daily use | |
+| Later | Web Push reminders (log lunch, water, physio — needs a small push sender), a tap-the-body map for injuries, barcode scanning for packaged foods, Capacitor wrapper | |
+
+Deliberately **not** planned: social feeds, leaderboards, coaches, payments, a marketplace, wearable and smart-scale
+integrations, a cloud database. A large commercial platform needs those; one person's health app doesn't.
 
 AI answers always use the shape: *what the data shows · possible patterns · what the data can't establish · things to discuss with your clinician.* Correlations are reported as counts ("5 of 7 days…"), never causes.
 
@@ -97,6 +110,16 @@ It covers:
 - nutrition: protein goal, logging by grams, foods adding up (comma decimals), saved meals with one-tap log and
   undo, edit/delete/undo, the photo and description estimates (what's sent, nothing saved before ✓, edited
   foods lose the estimate mark, saved as `user_confirmed`), "not food", and the 7-day chart checked against the demo data
+- medical records: bulk import, record reading with repair of small model slips, review (one or all), range flags,
+  lab history, the overall health summary, injury suggestions from records, and the schema rules Gemini accepts
+- recovery plan: only checked-library exercises in range, target formulas and their holds, the weekly check
+- exercise demonstrations: every starter exercise, captions per phase, pause, Reduce Motion stills
+- daily basics: sleep, steps (one per day), weight and BMI, goals and suggestions, first-run setup, Quick Log tiles
+- nutrition 0.10: the food list's numbers (energy consistent with macros), search, portions, recents, My Foods from
+  a label, recipes by servings, calorie suggestion and floors, meal ideas
+- Apple Health import: parsing (segments → nights, pounds → kg, junk skipped), review vs personal link, idempotency
+- appearance (System/Light/Dark before first paint), profile photo, units (cm/in, kg/lb), sign out and restore,
+  delete everything, and sync uploading only when something changed
 - a light/dark screenshot tour of every screen, including the AI screens
 
 ## Phase audits
@@ -128,6 +151,21 @@ the phase is called done.
   data; output is bounded and schema-checked; backups validate meals, saved meals and the protein goal.
 - **Performance:** Nutrition and the meal sheet are code-split (6 KB and 10 KB); Today only adds a small card;
   meals are read through the `recordedAt` index. No new dependencies.
+
+**0.6–0.8 audits.** Found and fixed: Gemini silently rejected a large `maxItems` on facts (forced the unenforced
+path, which produced malformed answers) — now capped at 20 and tested; record answers repair small slips; a
+too-slow fallback exceeded Vercel's limit (shorter evidence, longer time budget only where needed); sign out now
+refuses to clear the device unless a fresh backup finished; review nudge opens Review All; plan layout and wrapped
+target text; exercise-animation start frames, zoomed forearm scenes, and angle paths that took the long way round.
+
+**0.9–0.10 audit.** Found and fixed: editing a meal and removing its only food with calories kept the old calorie
+total (saving merges, so every nutrient is now written explicitly); profile hooks couldn't tell "loading" from "no
+profile" (new users saw blank screens); undo for quick pain logs and one-tap meals hard-deleted (a sync could bring
+entries back); sync uploaded a full snapshot on every app open (now only after changes); water under a litre showed
+as "0.3 L"; a pre-selected sex on the calorie form. Security: Apple Health links from anywhere always show a review
+first (only the personal key imports on its own), import size is capped, and the data leaves the address bar after
+import. Performance: every new screen is split out (Goals, Weight, Nutrition, food picker, food list); the main
+bundle grew by a few kB for Today's rings.
 
 ## Success criteria for 0.1
 

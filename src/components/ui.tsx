@@ -293,7 +293,8 @@ export function Toggle({ label, checked, onChange, icon }: { label: string; chec
 }
 
 /** Activity-style progress ring; animates as progress changes. */
-export function ProgressRing({ value, max, size = 64, stroke = 8, children }: { value: number; max: number; size?: number; stroke?: number; children?: ReactNode }) {
+/** A ring that fills towards a target. `color` is a CSS colour (the accent by default); the track is a faint tint of it. */
+export function ProgressRing({ value, max, size = 64, stroke = 8, color = 'var(--color-accent)', children }: { value: number; max: number; size?: number; stroke?: number; color?: string; children?: ReactNode }) {
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
   const pct = max > 0 ? Math.min(value / max, 1) : 0
@@ -305,13 +306,13 @@ export function ProgressRing({ value, max, size = 64, stroke = 8, children }: { 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90" aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-accent-soft)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color === 'var(--color-accent)' ? 'var(--color-accent-soft)' : `color-mix(in srgb, ${color} 18%, transparent)`} strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="var(--color-accent)"
+          stroke={color}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={c}

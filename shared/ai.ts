@@ -56,6 +56,7 @@ export const inputs = {
   'report-narrative': z.object({ context }),
   'health-summary': z.object({ context }),
   'recovery-plan': z.object({ context }),
+  'meal-ideas': z.object({ context }),
 } as const
 
 export type AiTask = keyof typeof inputs
@@ -150,6 +151,9 @@ export const outputs = {
           amount: text(60),
           protein: z.number().min(0).max(300),
           calories: z.number().min(0).max(5000),
+          carbs: z.number().min(0).max(1000).optional().catch(undefined),
+          fat: z.number().min(0).max(500).optional().catch(undefined),
+          fiber: z.number().min(0).max(200).optional().catch(undefined),
         }),
       )
       .max(12),
@@ -198,6 +202,13 @@ export const outputs = {
     ),
     cautions: keepValid(loose(300), 6),
     questions: keepValid(loose(300), 5),
+  }),
+  'meal-ideas': z.object({
+    ideas: keepValid(
+      z.object({ name: loose(80), portion: loose(160).catch(''), calories: z.coerce.number().min(0).max(3000), protein: z.coerce.number().min(0).max(200), why: loose(200).catch('') }),
+      4,
+    ),
+    note: loose(300).catch(''),
   }),
 } satisfies Record<AiTask, z.ZodType>
 

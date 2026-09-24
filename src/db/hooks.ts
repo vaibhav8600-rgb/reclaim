@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, type Base, type Exercise, type Injury, type JournalEntry, type Meal, type Measurement, type MedicalDocument, type RehabSession, type Symptom } from './db'
+import { db, type Activity, type Base, type Exercise, type Injury, type JournalEntry, type Meal, type Measurement, type MedicalDocument, type RehabSession, type Sleep, type Symptom } from './db'
 import { alive, getMeta } from './repo'
+import { dayKey, fromDayKey } from '../lib/dates'
 
 export function useInjuries() {
   return useLiveQuery(async () => (await db.injuries.toArray()).filter(alive), [])
@@ -14,8 +15,9 @@ export function useInjuryMap() {
 
 export const isOpenInjury = (i: Injury) => i.status !== 'resolved'
 
+/** The profile: undefined while loading, null when there isn't one yet (a new user). */
 export function useProfile() {
-  return useLiveQuery(() => db.profile.get('me'), [])
+  return useLiveQuery(async () => (await db.profile.get('me')) ?? null, [])
 }
 
 export function useSymptomsSince(from: number, injuryId?: string, type = 'pain') {
@@ -61,6 +63,8 @@ export type Entry =
   | { kind: 'session'; at: number; item: RehabSession }
   | { kind: 'document'; at: number; item: MedicalDocument }
   | { kind: 'meal'; at: number; item: Meal }
+  | { kind: 'sleep'; at: number; item: Sleep }
+  | { kind: 'activity'; at: number; item: Activity }
 
 /**
  * The timeline is derived from the typed tables, never stored separately.
@@ -72,7 +76,7 @@ export function useEntries(opts: { from?: number; injuryId?: string; limit?: num
   const all = useLiveQuery(async () => {
     const since = <T extends Base & { injuryId?: string }>(rows: T[]) =>
       rows.filter((r) => alive(r) && (!injuryId || r.injuryId === injuryId))
-    const [symptoms, measurements, notes, injuries, sessions, documents, meals] = await Promise.all([
+    const [symptoms, measurements, notes, injuries, sessions, documents, meals, sleeps, activity] = await Promise.all([
       db.symptoms.where('recordedAt').aboveOrEqual(from).toArray(),
       db.measurements.where('recordedAt').aboveOrEqual(from).toArray(),
       injuryId ? Promise.resolve([] as JournalEntry[]) : db.journal.where('recordedAt').aboveOrEqual(from).toArray(),
@@ -80,12 +84,17 @@ export function useEntries(opts: { from?: number; injuryId?: string; limit?: num
       db.sessions.where('recordedAt').aboveOrEqual(from).toArray(),
       db.documents.toArray(),
       injuryId ? Promise.resolve([] as Meal[]) : db.meals.where('recordedAt').aboveOrEqual(from).toArray(),
+      injuryId ? Promise.resolve([] as Sleep[]) : db.sleep.where('wakeAt').aboveOrEqual(from).toArray(),
+      injuryId ? Promise.resolve([] as Activity[]) : db.activity.where('date').aboveOrEqual(dayKey(from)).toArray(),
     ])
     const entries: Entry[] = [
       ...since(symptoms).map((item) => ({ kind: 'symptom' as const, at: item.recordedAt, item })),
       ...since(measurements).map((item) => ({ kind: 'measurement' as const, at: item.recordedAt, item })),
       ...notes.filter(alive).map((item) => ({ kind: 'note' as const, at: item.recordedAt, item })),
       ...meals.filter(alive).map((item) => ({ kind: 'meal' as const, at: item.recordedAt, item })),
+      ...sleeps.filter(alive).map((item) => ({ kind: 'sleep' as const, at: item.wakeAt, item })),
+      // A day's activity sits at the end of that day (or now, for today).
+      ...activity.filter(alive).map((item) => ({ kind: 'activity' as const, at: Math.min(fromDayKey(item.date) + 21 * 3_600_000, Date.now()), item })),
       ...since(sessions).map((item) => ({ kind: 'session' as const, at: item.recordedAt, item })),
       ...since(documents)
         .map((item) => ({ kind: 'document' as const, at: new Date(item.date + 'T12:00').getTime(), item }))
@@ -133,4 +142,19 @@ export function useFacts() {
 /** Water logged since `from`. */
 export function useWater(from = 0) {
   return useLiveQuery(async () => (await db.water.where('recordedAt').aboveOrEqual(from).toArray()).filter(alive), [from])
+}
+
+/** Sleep that ended since `from`, newest first. */
+export function useSleep(from = 0) {
+  return useLiveQuery(async () => (await db.sleep.where('wakeAt').aboveOrEqual(from).toArray()).filter(alive).sort((a, b) => b.wakeAt - a.wakeAt), [from])
+}
+
+/** Daily activity since a day (YYYY-MM-DD), newest first. */
+export function useActivity(fromDay = '0000-00-00') {
+  return useLiveQuery(async () => (await db.activity.where('date').aboveOrEqual(fromDay).toArray()).filter(alive).sort((a, b) => b.date.localeCompare(a.date)), [fromDay])
+}
+
+/** The most recent weight reading (null once loaded if there's none). */
+export function useLatestWeight() {
+  return useLiveQuery(async () => (await db.measurements.where('kind').equals('weight').toArray()).filter(alive).sort((a, b) => b.recordedAt - a.recordedAt)[0] ?? null, [])
 }

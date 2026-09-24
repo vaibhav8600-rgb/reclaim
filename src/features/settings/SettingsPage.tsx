@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Camera, Cloud, Download, FileUp, HardDrive, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Trash2 } from 'lucide-react'
+import { Camera, Cloud, Download, FileUp, HardDrive, Heart, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Target, Trash2 } from 'lucide-react'
 import type { AiHealth } from '../../../shared/ai'
 import { AiConsentSheet } from '../../components/ai'
 import { aiHealth, setAiConsent, type AiConsent } from '../../lib/ai'
@@ -31,6 +31,9 @@ const TABLE_LABELS: Record<DataTable, string> = {
   savedMeals: 'Saved Meals',
   facts: 'Health Profile',
   water: 'Water',
+  sleep: 'Sleep',
+  activity: 'Activity',
+  foods: 'My Foods',
 }
 
 const TILE_INSET = '3.625rem'
@@ -45,6 +48,12 @@ export function SettingsPage() {
     <div className="space-y-7 pb-6">
       <NavBar title="Settings" back="/" />
       <ProfileSection />
+      <Section>
+        <Group inset={TILE_INSET}>
+          <Row icon={<IconTile icon={Target} color="orange" />} title="Goals" subtitle="Calories, protein, water, steps, sleep and weight" to="/goals" />
+          <Row icon={<IconTile icon={Heart} color="pink" />} title="Apple Health" subtitle="Bring in steps, weight and sleep" to="/settings/health" />
+        </Group>
+      </Section>
       <AppearanceSection />
       <DriveSection />
       <AiSection />

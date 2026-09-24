@@ -59,6 +59,7 @@ test('the record-reading answer survives small model slips, and Gemini gets a sc
     'report-narrative': { context: {} },
     'health-summary': { context: {} },
     'recovery-plan': { context: {} },
+    'meal-ideas': { context: {} },
   }
   for (const task of AI_TASKS) expect(Math.max(0, ...maxItems(buildPrompt(task, samples[task] as never).schema)), task).toBeLessThanOrEqual(20)
 })
@@ -225,19 +226,20 @@ test('add a fact by hand; a record already read shows its facts and re-reading r
 test('water: one-tap glasses on Today, undo, and a goal', async ({ page }) => {
   await importBackup(page, injuriesBackup('Tennis elbow'))
   await page.goto('/')
-  const water = page.getByTestId('water-today').first()
-  await expect(water).toHaveText('0')
+  const water = page.getByTestId('glance-water')
+  await expect(water).toHaveText('0 ml')
   await page.getByRole('button', { name: 'Log 250 ml of water' }).click()
   await page.getByRole('button', { name: 'Log 500 ml of water' }).click()
-  await expect(water).toHaveText('750')
+  await expect(water).toHaveText('750 ml')
   await expect(page.getByText('500 ml water · 750 ml today')).toBeVisible()
   await page.getByRole('button', { name: 'Undo' }).click()
-  await expect(water).toHaveText('250')
+  await expect(water).toHaveText('250 ml')
 
+  await page.goto('/goals')
+  await page.getByLabel('Water (ml)').fill('2500')
+  await page.getByLabel('Water (ml)').press('Enter')
+  await expect(page.getByText('Water: 2,500 ml')).toBeVisible()
   await page.goto('/nutrition')
-  await page.getByLabel('Daily water goal (ml)').fill('2500')
-  await page.getByLabel('Daily water goal (ml)').press('Enter')
-  await expect(page.getByText('Daily water goal: 2,500 ml')).toBeVisible()
   await expect(page.getByText('of 2,500 ml')).toBeVisible()
 
   const db = await dumpDb(page)

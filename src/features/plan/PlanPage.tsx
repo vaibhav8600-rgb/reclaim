@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ClipboardList, Droplet, ShieldCheck, Sparkles, Utensils } from 'lucide-react'
 import type { AiOutput } from '../../../shared/ai'
 import { db, type Exercise, type Prescription } from '../../db/db'
-import { isOpenInjury, useExerciseMap, useFacts, useInjuries, usePrescriptions, useProfile, useSessions } from '../../db/hooks'
+import { isOpenInjury, useExerciseMap, useFacts, useInjuries, useLatestWeight, usePrescriptions, useProfile, useSessions } from '../../db/hooks'
 import { alive, save, setMeta } from '../../db/repo'
 import { AiAction } from '../../components/ai'
 import { MLink } from '../../components/MLink'
@@ -48,7 +48,8 @@ export function PlanPage() {
   const sessions = useSessions(daysAgo(7))
   const facts = useFacts()
   const profile = useProfile()
-  const weight = useLiveQuery(async () => weightKg((await db.measurements.where('kind').equals('weight').toArray()).filter(alive).sort((a, b) => b.recordedAt - a.recordedAt)[0]) ?? null, [])
+  const latestWeight = useLatestWeight()
+  const weight = latestWeight === undefined ? undefined : (weightKg(latestWeight ?? undefined) ?? null)
   const [writing, setWriting] = useState<Partial<AiOutput<'recovery-plan'>>>()
   const [skipped, setSkipped] = useState<Set<string>>(new Set())
   const [setGoals, setSetGoals] = useState(true)

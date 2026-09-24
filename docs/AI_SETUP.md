@@ -38,8 +38,11 @@ On Vercel: **Project → Settings → Environment Variables** → add `GEMINI_AP
 - **How much:** at most 40 requests per 10 minutes per person, and request bodies up to ~4 MB.
 - **What:** each task has a fixed input shape; anything else is rejected. The model's answer must match the expected
   shape too, or it isn't shown.
-- **Your data:** only what a feature needs is sent — the note you're structuring, the document you're summarising,
-  or a summary of recent entries. Your name isn't sent. Nothing AI suggests is saved until you review it.
+- **Your data:** only what a feature needs is sent — the note you're structuring, the record you're reading,
+  a meal photo or description, or a summary of recent entries and your confirmed health profile. Your name isn't
+  sent. Nothing AI suggests is saved until you review it (entries, record facts, meals, the recovery plan).
+- **Guard rails:** the recovery plan may only choose exercises from the checked library and the app keeps doses
+  inside its ranges; protein, water and calorie targets are worked out by fixed formulas, not by the model.
 - **Prompt injection:** notes and documents are passed as data with instructions to never follow text inside them.
 
 ## Models and fallbacks
@@ -60,8 +63,12 @@ Changing `.env.local` needs a restart of `npm run dev`.
 ## Backup: Groq (optional)
 
 If every Gemini model is busy, Reclaim can answer with [Groq](https://console.groq.com) instead. It is used only
-for text tasks: weekly summary, Ask, note → entries, meal estimates from a description, and the report summary.
-Document summaries and meal photos stay on Gemini, because Groq here only handles text.
+for text tasks: weekly summary, Ask, note → entries, meal estimates from a description, meal ideas, the health
+overview, the recovery plan, and the report summary.
+Reading records and meal photos stay on Gemini, because Groq here only handles text.
+
+Free-tier note: on Gemini's free tier, what you send may be used to improve Google's products. For medical
+records, a paid key is the safer choice.
 
 1. <https://console.groq.com/keys> → **Create API Key** (the free tier is enough).
 2. Add to `.env.local` (and to Vercel's environment variables):

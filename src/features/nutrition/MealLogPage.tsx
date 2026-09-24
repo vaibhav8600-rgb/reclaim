@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
-import { Camera, Plus, Sparkles, X } from 'lucide-react'
+import { Camera, Plus, Search, Sparkles, X } from 'lucide-react'
 import { MEAL_PHOTO_MAX_SIDE } from '../../../shared/ai'
-import { db, type FoodItem, type MealSlot, type SavedMeal, type Source } from '../../db/db'
+import { db, type FoodItem, type MealSlot, type Nutrients, type SavedMeal, type Source } from '../../db/db'
 import { useSavedMeals } from '../../db/hooks'
 import { restore, save, softDelete } from '../../db/repo'
 import { AiAction } from '../../components/ai'
@@ -10,22 +10,40 @@ import { Field, Group, Segmented, Toggle } from '../../components/ui'
 import { imageForAi, runAi } from '../../lib/ai'
 import { haptic } from '../../lib/haptics'
 import { useBack } from '../../lib/nav'
-import { grams, MEAL_SLOTS, slotFor, totals } from '../../lib/nutrition'
+import { grams, MEAL_SLOTS, scale, slotFor, totals } from '../../lib/nutrition'
 import { requestPersistence } from '../../lib/platform'
 import { toast } from '../../lib/toast'
 import { DeleteRow, SheetForm, WhenRow } from '../log/shared'
+import { FoodPicker } from './FoodPicker'
 
 interface FoodDraft {
   name: string
   amount: string
   protein: string
   calories: string
+  carbs: string
+  fat: string
+  fiber: string
+  /** Kept as they came (from the food list, a label or the AI): not edited on this screen. */
+  extra?: Pick<FoodItem, 'sugar' | 'sodium' | 'foodId'>
   /** Straight from the AI and not yet touched by the user. */
   estimated?: boolean
 }
 
 const num = (s: string) => parseFloat(s.replace(',', '.'))
-const toDraft = (f: FoodItem): FoodDraft => ({ name: f.name, amount: f.amount ?? '', protein: String(f.protein), calories: f.calories === undefined ? '' : String(f.calories) })
+const str = (n?: number) => (n === undefined ? '' : String(n))
+const opt = (s: string) => (s.trim() ? num(s) : undefined)
+const toDraft = (f: FoodItem): FoodDraft => ({
+  name: f.name,
+  amount: f.amount ?? '',
+  protein: String(f.protein),
+  calories: str(f.calories),
+  carbs: str(f.carbs),
+  fat: str(f.fat),
+  fiber: str(f.fiber),
+  extra: { sugar: f.sugar, sodium: f.sodium, foodId: f.foodId },
+})
+const EMPTY: FoodDraft = { name: '', amount: '', protein: '', calories: '', carbs: '', fat: '', fiber: '' }
 
 /**
  * Log a meal (`?id=` edits one), or edit a saved meal (`?saved=<id>`, or `?saved=` for a new one).
@@ -53,12 +71,18 @@ export function MealLogPage() {
   const [assumptions, setAssumptions] = useState<string[]>([])
   const [notFood, setNotFood] = useState(false)
   const [loaded, setLoaded] = useState(!id && !savedId)
+  const [picking, setPicking] = useState(false)
+  /** A recipe: the foods are for `batch` servings, of which `eaten` are logged. */
+  const [batch, setBatch] = useState(1)
+  const [eaten, setEaten] = useState(1)
 
-  function fill(m: Pick<SavedMeal, 'name' | 'protein' | 'calories' | 'items'>) {
+  function fill(m: Pick<SavedMeal, 'name' | 'protein' | 'calories' | 'items' | 'servings'>) {
     setName(m.name)
     setFoods(m.items.map(toDraft))
     setProtein(m.items.length ? '' : String(m.protein))
     setCalories(m.items.length || m.calories === undefined ? '' : String(m.calories))
+    setBatch(m.servings ?? 1)
+    setEaten(1)
   }
 
   useEffect(() => {
@@ -86,23 +110,32 @@ export function MealLogPage() {
   if (!loaded) return null
 
   const items: FoodItem[] = foods.map((f) => ({
+    ...f.extra,
     name: f.name.trim(),
     amount: f.amount.trim() || undefined,
     protein: num(f.protein),
-    calories: f.calories.trim() ? num(f.calories) : undefined,
+    calories: opt(f.calories),
+    carbs: opt(f.carbs),
+    fat: opt(f.fat),
+    fiber: opt(f.fiber),
   }))
   const okNumber = (n: number | undefined) => n === undefined || (Number.isFinite(n) && n >= 0)
-  const total = foods.length ? totals(items) : { protein: num(protein), calories: calories.trim() ? num(calories) : undefined }
+  const recipe = !editingSaved && batch > 1
+  // Logging part of a recipe: every food (and so the total) scales to the servings eaten.
+  const logged = recipe ? items.map((i) => ({ ...scale(i, eaten / batch), amount: i.amount && `${i.amount} × ${eaten}/${batch}` })) : items
+  const total: Nutrients = foods.length ? totals(logged) : { protein: num(protein), calories: opt(calories) }
   const valid =
     !!name.trim() &&
-    items.every((i) => i.name && okNumber(i.protein) && okNumber(i.calories)) &&
+    items.every((i) => i.name && okNumber(i.protein) && okNumber(i.calories) && okNumber(i.carbs) && okNumber(i.fat) && okNumber(i.fiber)) &&
     Number.isFinite(total.protein) &&
     okNumber(total.protein) &&
     okNumber(total.calories)
 
   const editFood = (index: number, patch: Partial<FoodDraft>) => setFoods((all) => all.map((f, i) => (i === index ? { ...f, ...patch, estimated: false } : f)))
   // The first food carries over a protein/calorie total typed before foods were added.
-  const addFood = () => setFoods((all) => [...all, all.length ? { name: '', amount: '', protein: '', calories: '' } : { name: '', amount: '', protein, calories }])
+  const addFood = () => setFoods((all) => [...all, all.length ? EMPTY : { ...EMPTY, protein, calories }])
+  // A food from the list keeps its values; the first one also replaces a quick protein total typed before.
+  const addPicked = (item: FoodItem) => setFoods((all) => [...all, toDraft(item)])
 
   function pickPhoto(file: File | undefined) {
     if (!file) return
@@ -116,19 +149,22 @@ export function MealLogPage() {
     setNotFood(!r.isFood)
     if (!r.isFood) return
     setName(r.name)
-    setFoods(r.items.map((i) => ({ name: i.name, amount: i.amount, protein: String(Math.round(i.protein)), calories: String(Math.round(i.calories)), estimated: true })))
+    setFoods(r.items.map((i) => ({ ...EMPTY, name: i.name, amount: i.amount, protein: String(Math.round(i.protein)), calories: String(Math.round(i.calories)), carbs: str(i.carbs), fat: str(i.fat), fiber: str(i.fiber), estimated: true })))
     setAssumptions(r.assumptions)
     setSource('ai_estimate')
   }
 
+  /** Every nutrient, even the missing ones: saving merges into the old record, so a removed value must be written as empty. */
+  const all = (n: Nutrients): Nutrients => ({ protein: n.protein, calories: n.calories, carbs: n.carbs, fat: n.fat, fiber: n.fiber, sugar: n.sugar, sodium: n.sodium })
+
   async function submit() {
     haptic()
-    const values = { name: name.trim(), protein: total.protein, calories: total.calories, items }
     if (editingSaved) {
-      await save(db.savedMeals, { id: savedId, ...values })
-      toast(savedId ? 'Saved meal updated' : `${values.name} added to Saved Meals`)
+      await save(db.savedMeals, { id: savedId, name: name.trim(), ...all(foods.length ? totals(items) : total), items, servings: batch > 1 ? batch : undefined })
+      toast(savedId ? 'Saved meal updated' : `${name.trim()} added to Saved Meals`)
       return back()
     }
+    const values = { name: name.trim(), ...all(total), items: logged }
     await save(db.meals, {
       id,
       ...values,
@@ -138,7 +174,7 @@ export function MealLogPage() {
       // Reviewed and saved by the user: an AI estimate becomes a confirmed value.
       source: source === 'ai_estimate' ? 'user_confirmed' : source,
     })
-    if (keep) await save(db.savedMeals, values)
+    if (keep) await save(db.savedMeals, { ...values, items })
     void requestPersistence()
     toast(`${values.name} · ${grams(values.protein)} protein ${id ? 'updated' : 'logged'}`)
     back()
@@ -199,7 +235,7 @@ export function MealLogPage() {
             )}
           </div>
           <div className="mt-3">
-            <AiAction label="Estimate Protein" runningLabel="Looking at your meal…" run={estimate} disabled={!photo && !name.trim()} />
+            <AiAction label="Estimate with AI" runningLabel="Looking at your meal…" run={estimate} disabled={!photo && !name.trim()} />
           </div>
           {notFood ? (
             <p className="section-footer !text-danger" role="alert">That doesn’t look like food. Try another photo, or describe the meal above.</p>
@@ -230,8 +266,11 @@ export function MealLogPage() {
               <span className="text-muted">kcal</span>
             </label>
           </Group>
-          <button type="button" className="btn btn-quiet mt-3 w-full" onClick={addFood}><Plus size={19} /> Add Foods</button>
-          <p className="section-footer">Optional: list each food, and the totals add up for you.</p>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <button type="button" className="btn btn-soft" onClick={() => setPicking(true)}><Search size={18} /> Search Foods</button>
+            <button type="button" className="btn btn-quiet" onClick={addFood}><Plus size={18} /> Add by Hand</button>
+          </div>
+          <p className="section-footer">Or list each food — from the food list, or typed in — and the totals add up for you.</p>
         </div>
       ) : (
         <div>
@@ -247,10 +286,36 @@ export function MealLogPage() {
               <FoodCard key={i} food={f} onChange={(patch) => editFood(i, patch)} onRemove={() => setFoods((all) => all.filter((_, k) => k !== i))} />
             ))}
           </div>
-          <button type="button" className="btn btn-quiet mt-3 w-full" onClick={addFood}><Plus size={19} /> Add Food</button>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <button type="button" className="btn btn-soft" onClick={() => setPicking(true)}><Search size={18} /> Search Foods</button>
+            <button type="button" className="btn btn-quiet" onClick={addFood}><Plus size={18} /> Add by Hand</button>
+          </div>
+          {editingSaved && (
+            <Group className="mt-3">
+              <label className="cell">
+                <span className="flex-1">Makes</span>
+                <input className="w-14 bg-transparent text-right outline-none" inputMode="numeric" value={batch} onChange={(e) => setBatch(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))} aria-label="Servings this recipe makes" />
+                <span className="text-muted">{batch === 1 ? 'serving' : 'servings'}</span>
+              </label>
+            </Group>
+          )}
+          {recipe && (
+            <Group className="mt-3">
+              <label className="cell">
+                <span className="flex-1">Servings Eaten</span>
+                <input className="w-14 bg-transparent text-right outline-none" inputMode="decimal" value={eaten} onChange={(e) => setEaten(Math.max(0.5, Math.min(batch, num(e.target.value) || 1)))} aria-label="Servings eaten" />
+                <span className="text-muted">of {batch}</span>
+              </label>
+            </Group>
+          )}
           <p className="mt-3 px-1 font-semibold" data-testid="meal-total" aria-live="polite">
-            Total: {Number.isFinite(total.protein) ? grams(total.protein) : '—'} protein{total.calories !== undefined && Number.isFinite(total.calories) ? ` · ${Math.round(total.calories)} kcal` : ''}
+            Total{recipe ? ` (${eaten} of ${batch} servings)` : ''}: {Number.isFinite(total.protein) ? grams(total.protein) : '—'} protein{total.calories !== undefined && Number.isFinite(total.calories) ? ` · ${Math.round(total.calories)} kcal` : ''}
           </p>
+          {(total.carbs !== undefined || total.fat !== undefined || total.fiber !== undefined) && (
+            <p className="px-1 text-[0.9375rem] text-muted" data-testid="meal-macros">
+              {[total.carbs !== undefined && `Carbs ${Math.round(total.carbs)} g`, total.fat !== undefined && `Fat ${Math.round(total.fat)} g`, total.fiber !== undefined && `Fiber ${Math.round(total.fiber)} g`].filter(Boolean).join(' · ')}
+            </p>
+          )}
           {assumptions.length > 0 && (
             <ul className="section-footer list-disc space-y-0.5 pl-9">
               {assumptions.map((a) => <li key={a}>{a}</li>)}
@@ -280,6 +345,7 @@ export function MealLogPage() {
       )}
 
       {(id || savedId) && <DeleteRow label={editingSaved ? 'Delete Saved Meal' : 'Delete Meal'} onDelete={remove} />}
+      {picking && <FoodPicker onPick={addPicked} onClose={() => setPicking(false)} />}
     </SheetForm>
   )
 }
@@ -310,6 +376,17 @@ function FoodCard({ food, onChange, onRemove }: { food: FoodDraft; onChange: (pa
           kcal
           <input className={`${small} text-[1rem] text-ink`} inputMode="decimal" value={food.calories} onChange={(e) => onChange({ calories: e.target.value })} placeholder="—" />
         </label>
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-2 text-[0.8125rem] text-muted">
+        {(['carbs', 'fat', 'fiber'] as const).map((k) => (
+          <label key={k} className="rounded-xl bg-fill px-2.5 py-1">
+            {k === 'carbs' ? 'Carbs' : k === 'fat' ? 'Fat' : 'Fiber'}
+            <span className="flex items-baseline gap-0.5">
+              <input className={`${small} text-[0.9375rem] text-ink`} inputMode="decimal" value={food[k]} onChange={(e) => onChange({ [k]: e.target.value })} placeholder="—" aria-label={`${k} grams`} />
+              <span>g</span>
+            </span>
+          </label>
+        ))}
       </div>
       {food.estimated && (
         <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[0.75rem] font-semibold text-accent">

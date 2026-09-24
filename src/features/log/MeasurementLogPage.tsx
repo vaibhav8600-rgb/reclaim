@@ -23,7 +23,7 @@ export function MeasurementLogPage() {
   const back = useBack('/', 'sheet-down')
   const injuries = useInjuries()
   const [draft, setDraft] = useState<Draft>({
-    kind: presetInjury ? 'grip' : 'weight',
+    kind: params.get('kind') ?? (presetInjury ? 'grip' : 'weight'),
     unit: 'kg',
     side: 'left',
     injuryId: presetInjury,
