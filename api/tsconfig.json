@@ -1,4 +1,5 @@
 {
-  "extends": "../server/tsconfig.json",
-  "include": [".", "../server", "../shared"]
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "types": [], "lib": ["ES2023", "DOM"] },
+  "include": [".", "../server/ai", "../shared"]
 }
