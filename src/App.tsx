@@ -37,6 +37,11 @@ const InsightsPage = page(() => import('./features/insights/InsightsPage'), 'Ins
 const ReportPage = page(() => import('./features/report/ReportPage'), 'ReportPage')
 const NutritionPage = page(() => import('./features/nutrition/NutritionPage'), 'NutritionPage')
 const MealLogPage = page(() => import('./features/nutrition/MealLogPage'), 'MealLogPage')
+const GoalsPage = page(() => import('./features/goals/GoalsPage'), 'GoalsPage')
+const WeightPage = page(() => import('./features/goals/WeightPage'), 'WeightPage')
+const WelcomePage = page(() => import('./features/goals/WelcomePage'), 'WelcomePage')
+const SleepLogPage = page(() => import('./features/log/SleepLogPage'), 'SleepLogPage')
+const StepsLogPage = page(() => import('./features/log/StepsLogPage'), 'StepsLogPage')
 const HealthPage = page(() => import('./features/health/HealthPage'), 'HealthPage')
 const LabPage = page(() => import('./features/health/LabPage'), 'LabPage')
 const ReviewPage = page(() => import('./features/health/ReviewPage'), 'ReviewPage')
@@ -75,6 +80,8 @@ export function App() {
             <Route path="nutrition" element={<NutritionPage />} />
             <Route path="health" element={<HealthPage />} />
             <Route path="plan" element={<PlanPage />} />
+            <Route path="goals" element={<GoalsPage />} />
+            <Route path="weight" element={<WeightPage />} />
             <Route path="health/lab" element={<LabPage />} />
             <Route path="health/summaries" element={<SummariesPage />} />
             <Route path="settings" element={<SettingsPage />} />
@@ -88,6 +95,9 @@ export function App() {
           <Route path="log/note" element={<NoteLogPage />} />
           <Route path="log/review" element={<NoteReviewPage />} />
           <Route path="log/meal" element={<MealLogPage />} />
+          <Route path="log/sleep" element={<SleepLogPage />} />
+          <Route path="welcome" element={<WelcomePage />} />
+          <Route path="log/steps" element={<StepsLogPage />} />
           <Route path="rehab/session" element={<SessionPage />} />
           <Route path="rehab/plan/new" element={<PrescriptionFormPage />} />
           <Route path="rehab/plan/:id/edit" element={<PrescriptionFormPage />} />

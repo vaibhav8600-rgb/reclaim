@@ -4,7 +4,7 @@ import { useGo } from '../lib/nav'
 import type { Motion } from '../lib/transitions'
 
 /** Screens presented as sheets (forms); everything else pushes. */
-const SHEET = /^\/(log\/|injuries\/new|injuries\/[^/]+\/edit|documents\/(new|import)|documents\/[^/]+\/edit|health\/(review|facts)(\/|$)|settings\/drive|rehab\/(session|plan|exercises\/new|exercises\/[^/]+\/edit))/
+const SHEET = /^\/(log\/|injuries\/new|injuries\/[^/]+\/edit|documents\/(new|import)|documents\/[^/]+\/edit|health\/(review|facts)(\/|$)|settings\/drive|welcome|rehab\/(session|plan|exercises\/new|exercises\/[^/]+\/edit))/
 
 export const motionFor = (to: string): Motion => (SHEET.test(to) ? 'sheet-up' : 'push')
 

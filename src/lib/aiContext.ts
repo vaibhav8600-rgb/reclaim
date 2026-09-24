@@ -3,6 +3,7 @@ import { alive } from '../db/repo'
 import { kindInfo, sideLabel, symptomLabel } from './constants'
 import { dayKey, daysAgo, daysBetween, fromDayKey } from './dates'
 import { factKey, factValue } from './facts'
+import { qualityLabel, sleepHours } from './daily'
 import { dailyProtein } from './nutrition'
 import { candidates } from './plan'
 import { itemDone, startOfWeek, weeklyAdherence } from './rehab'
@@ -44,7 +45,7 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
   const from = daysAgo(days - 1, now)
   const half = daysAgo(Math.floor(days / 2) - 1, now)
 
-  const [injuries, symptoms, measurements, notes, sessions, prescriptions, exercises, documents, meals, profile, facts, water] = await Promise.all([
+  const [injuries, symptoms, measurements, notes, sessions, prescriptions, exercises, documents, meals, profile, facts, water, sleeps, activity] = await Promise.all([
     db.injuries.toArray(),
     db.symptoms.where('recordedAt').aboveOrEqual(from).toArray(),
     db.measurements.toArray(),
@@ -57,6 +58,8 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
     db.profile.get('me'),
     db.facts.toArray(),
     db.water.where('recordedAt').aboveOrEqual(from).toArray(),
+    db.sleep.where('wakeAt').aboveOrEqual(from).toArray(),
+    db.activity.where('date').aboveOrEqual(dayKey(from)).toArray(),
   ])
   const inScope = <T extends { injuryId?: string; deletedAt?: number }>(r: T) => alive(r as never) && (!injuryId || r.injuryId === injuryId)
   const injuryName = new Map(injuries.map((i) => [i.id, i.name]))
@@ -155,6 +158,16 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
           loggedDays: Object.entries(Object.groupBy(water.filter(alive), (d) => dayKey(d.recordedAt))).map(([date, ds]) => ({ date, ml: ds!.reduce((a, d) => a + d.amount, 0) })),
         }
       : undefined,
+    sleep: sleeps.some(alive)
+      ? {
+          goalHours: profile?.sleepTarget,
+          nights: sleeps.filter(alive).sort((a, b) => a.wakeAt - b.wakeAt).map((s) => ({ date: dayKey(s.wakeAt), hours: Math.round(sleepHours(s) * 10) / 10, quality: qualityLabel(s.quality) })),
+        }
+      : undefined,
+    activity: activity.some(alive)
+      ? { dailyStepsGoal: profile?.stepsTarget, days: activity.filter(alive).sort((a, b) => a.date.localeCompare(b.date)).map((a) => ({ date: a.date, steps: a.steps, activeMinutes: a.activeMinutes })) }
+      : undefined,
+    weightGoalKg: profile?.weightGoal,
     nutrition: liveMeals.length
       ? {
           dailyProteinGoalGrams: profile?.proteinTarget,

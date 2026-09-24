@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { Info, Plus, Utensils } from 'lucide-react'
 import { db, type SavedMeal } from '../../db/db'
-import { useInjuryMap, useMeals, useProfile, useSavedMeals, useWater } from '../../db/hooks'
-import { alive, save, softDelete } from '../../db/repo'
+import { useInjuryMap, useLatestWeight, useMeals, useProfile, useSavedMeals, useWater } from '../../db/hooks'
+import { save, softDelete } from '../../db/repo'
 import { ENTRY_INSET, EntryRow } from '../../components/EntryRow'
 import { MLink } from '../../components/MLink'
 import { GlassButton, Group, IconTile, NavBar, Section } from '../../components/ui'
@@ -176,7 +175,7 @@ function GoalSection({ field, title, unit, target, footer }: {
   footer: (weightKg: number | undefined, goal: number | undefined) => string
 }) {
   const [value, setValue] = useState<string>()
-  const weight = useLiveQuery(async () => (await db.measurements.where('kind').equals('weight').toArray()).filter(alive).sort((a, b) => b.recordedAt - a.recordedAt)[0], [])
+  const weight = useLatestWeight() ?? undefined
   const shown = value ?? (target ? String(target) : '')
   const typed = parseFloat(shown)
   const kg = weightKg(weight)

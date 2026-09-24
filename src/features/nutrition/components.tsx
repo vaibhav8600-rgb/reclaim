@@ -30,14 +30,15 @@ export function TodayCard({ protein, calories, meals, target, compact }: { prote
 export const ml = (n: number) => `${Math.round(n).toLocaleString()} ml`
 
 /** Water today against the goal, with one-tap glasses. */
+/** Log a drink, with Undo. The running total comes from the database: quick taps land before screens re-render. */
+export async function drinkWater(amount: number) {
+  haptic()
+  const id = await save(db.water, { amount, recordedAt: Date.now(), source: 'user' })
+  const today = (await db.water.where('recordedAt').aboveOrEqual(startOfDay(Date.now())).toArray()).filter(alive).reduce((a, d) => a + d.amount, 0)
+  toast(`${ml(amount)} water · ${ml(today)} today`, { label: 'Undo', onClick: () => softDelete(db.water, id) })
+}
+
 export function WaterCard({ total, target, compact }: { total: number; target?: number; compact?: boolean }) {
-  async function drink(amount: number) {
-    haptic()
-    const id = await save(db.water, { amount, recordedAt: Date.now(), source: 'user' })
-    // From the database, not the `total` prop: quick taps land before the card re-renders.
-    const today = (await db.water.where('recordedAt').aboveOrEqual(startOfDay(Date.now())).toArray()).filter(alive).reduce((a, d) => a + d.amount, 0)
-    toast(`${ml(amount)} water · ${ml(today)} today`, { label: 'Undo', onClick: () => softDelete(db.water, id) })
-  }
   return (
     <div className={`card flex items-center gap-4 ${compact ? 'p-3.5' : 'p-4'}`}>
       <ProgressRing value={total} max={target ?? 0} size={compact ? 52 : 72} stroke={compact ? 7 : 9}>
@@ -50,7 +51,7 @@ export function WaterCard({ total, target, compact }: { total: number; target?: 
         </p>
         <div className="mt-1.5 flex gap-2">
           {[250, 500].map((a) => (
-            <button key={a} type="button" onClick={() => drink(a)} className="chip !min-h-10 !px-3.5 !text-[0.9375rem]" aria-label={`Log ${a} ml of water`}>
+            <button key={a} type="button" onClick={() => drinkWater(a)} className="chip !min-h-10 !px-3.5 !text-[0.9375rem]" aria-label={`Log ${a} ml of water`}>
               <Plus size={14} strokeWidth={2.6} /> {a} ml
             </button>
           ))}

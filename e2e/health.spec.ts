@@ -225,14 +225,14 @@ test('add a fact by hand; a record already read shows its facts and re-reading r
 test('water: one-tap glasses on Today, undo, and a goal', async ({ page }) => {
   await importBackup(page, injuriesBackup('Tennis elbow'))
   await page.goto('/')
-  const water = page.getByTestId('water-today').first()
-  await expect(water).toHaveText('0')
+  const water = page.getByTestId('glance-water')
+  await expect(water).toHaveText('0 ml')
   await page.getByRole('button', { name: 'Log 250 ml of water' }).click()
   await page.getByRole('button', { name: 'Log 500 ml of water' }).click()
-  await expect(water).toHaveText('750')
+  await expect(water).toHaveText('750 ml')
   await expect(page.getByText('500 ml water · 750 ml today')).toBeVisible()
   await page.getByRole('button', { name: 'Undo' }).click()
-  await expect(water).toHaveText('250')
+  await expect(water).toHaveText('250 ml')
 
   await page.goto('/nutrition')
   await page.getByLabel('Daily water goal (ml)').fill('2500')

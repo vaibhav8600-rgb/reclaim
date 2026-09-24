@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { useGo } from '../lib/nav'
-import { Activity, Dumbbell, FolderHeart, NotebookPen, Ruler, Utensils, X } from 'lucide-react'
+import { Activity, Dumbbell, FolderHeart, Footprints, Moon, NotebookPen, Ruler, Scale, Utensils, X } from 'lucide-react'
 import { db } from '../db/db'
 import { isOpenInjury, useInjuries, useMeta } from '../db/hooks'
 import { save, setMeta, softDelete } from '../db/repo'
@@ -131,6 +131,9 @@ export function QuickLogSheet({ open, onClose }: { open: boolean; onClose: () =>
               { icon: Utensils, color: 'purple', label: 'Meal', to: '/log/meal' },
               { icon: NotebookPen, color: 'orange', label: 'Note', to: '/log/note' },
               { icon: FolderHeart, color: 'indigo', label: 'Document', to: `/documents/new${injuryParam}` },
+              { icon: Moon, color: 'indigo', label: 'Sleep', to: '/log/sleep' },
+              { icon: Footprints, color: 'green', label: 'Steps', to: '/log/steps' },
+              { icon: Scale, color: 'blue', label: 'Weight', to: '/log/measurement?kind=weight' },
             ].map((s) => (
               <button key={s.label} onClick={() => go(s.to)} className="card flex flex-col items-center gap-1.5 px-1 pt-3 pb-2.5 transition active:scale-95">
                 <IconTile icon={s.icon} color={s.color} />

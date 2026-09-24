@@ -189,7 +189,7 @@ Their description: ${data(i.description)}` : ''}`,
     case 'weekly-summary': {
       const i = input as AiInput<'weekly-summary'>
       return {
-        text: `Write this person's weekly recovery summary from their log: how the last 7 days compare with the 7 before, for pain and symptoms, rehab adherence, measurements, protein and water intake against their goals (if logged; report them, don't give diet advice) and anything notable in their notes.
+        text: `Write this person's weekly recovery summary from their log: how the last 7 days compare with the 7 before, for pain and symptoms, rehab adherence, measurements, protein and water intake, sleep and steps against their goals (if logged; report them, don't give diet or lifestyle advice) and anything notable in their notes.
 ${HEALTH_NOTE}
 The headline is one calm sentence about the most important change.
 Their log: ${data(i.context)}`,

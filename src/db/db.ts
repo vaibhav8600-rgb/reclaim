@@ -24,6 +24,13 @@ export interface Profile extends Base {
   waterTarget?: number
   /** Profile photo: a small square JPEG, as a data URL. */
   photo?: string
+  /** cm, for BMI and suggested targets. */
+  height?: number
+  /** kg */
+  weightGoal?: number
+  stepsTarget?: number
+  /** Hours of sleep a night. */
+  sleepTarget?: number
 }
 
 export interface Injury extends Base {
@@ -180,6 +187,30 @@ export interface HealthFact extends Base {
   source: Source
 }
 
+/** A night's sleep (or a nap). */
+export interface Sleep extends Base {
+  bedAt: number
+  wakeAt: number
+  /** 1 poor · 2 fair · 3 good · 4 great */
+  quality?: number
+  notes?: string
+  source: Source
+}
+
+/**
+ * One day's activity. The id is `activity-YYYY-MM-DD`, so there's one per day and two devices logging the same
+ * day merge into one record instead of two.
+ */
+export interface Activity extends Base {
+  /** YYYY-MM-DD */
+  date: string
+  steps?: number
+  activeMinutes?: number
+  /** km */
+  distance?: number
+  source: Source
+}
+
 /** A drink of water. */
 export interface Drink extends Base {
   /** ml */
@@ -254,6 +285,8 @@ export const db = new Dexie('reclaim') as Dexie & {
   savedMeals: Table<SavedMeal, string>
   facts: Table<HealthFact, string>
   water: Table<Drink, string>
+  sleep: Table<Sleep, string>
+  activity: Table<Activity, string>
   meta: Table<Meta, string>
 }
 
@@ -289,10 +322,15 @@ db.version(5).stores({
   water: 'id, recordedAt, updatedAt',
 })
 
+db.version(6).stores({
+  sleep: 'id, wakeAt, updatedAt',
+  activity: 'id, date, updatedAt',
+})
+
 db.on('populate', (tx) => {
   tx.table('exercises').bulkAdd(STARTER_EXERCISES)
 })
 
 /** Tables included in backups and future sync. */
-export const DATA_TABLES = ['profile', 'injuries', 'symptoms', 'measurements', 'journal', 'exercises', 'prescriptions', 'sessions', 'documents', 'meals', 'savedMeals', 'facts', 'water'] as const
+export const DATA_TABLES = ['profile', 'injuries', 'symptoms', 'measurements', 'journal', 'exercises', 'prescriptions', 'sessions', 'documents', 'meals', 'savedMeals', 'facts', 'water', 'sleep', 'activity'] as const
 export type DataTable = (typeof DATA_TABLES)[number]

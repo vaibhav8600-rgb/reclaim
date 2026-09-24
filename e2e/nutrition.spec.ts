@@ -42,8 +42,9 @@ test('protein first: a goal, a meal by grams, a saved meal logged in one tap (wi
 
   // Today and the timeline
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'Nutrition' })).toBeVisible()
-  await expect(proteinToday(page)).toHaveText('32')
+  await expect(page.getByRole('heading', { name: 'At a Glance' })).toBeVisible()
+  await expect(page.getByTestId('glance-protein')).toHaveText('32 g')
+  await expect(page.getByRole('link', { name: 'Protein 32 grams of 120' })).toBeVisible()
   await tab(page, 'Timeline').click()
   await page.getByRole('button', { name: 'Meals', exact: true }).click()
   await expect(page.getByRole('link', { name: /Protein shake.*32 g protein · 280 kcal/ })).toBeVisible()

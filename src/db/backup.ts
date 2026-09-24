@@ -20,7 +20,12 @@ const foodItem = z.object({ name: z.string(), amount: z.string().optional(), pro
 const side = z.enum(['left', 'right', 'both', 'none'])
 
 const schemas = {
-  profile: z.object({ ...base, name: z.string(), proteinTarget: z.number().min(0).max(1000).optional(), waterTarget: z.number().min(0).max(20_000).optional(), photo: z.string().startsWith('data:image/').max(400_000).optional() }),
+  profile: z.object({ ...base, name: z.string(), proteinTarget: z.number().min(0).max(1000).optional(), waterTarget: z.number().min(0).max(20_000).optional(), photo: z.string().startsWith('data:image/').max(400_000).optional(),
+    height: z.number().min(50).max(260).optional(),
+    weightGoal: z.number().min(20).max(400).optional(),
+    stepsTarget: z.number().min(0).max(100_000).optional(),
+    sleepTarget: z.number().min(0).max(16).optional(),
+  }),
   injuries: z.object({
     ...base,
     name: z.string(),
@@ -149,6 +154,15 @@ const schemas = {
     source,
   }),
   water: z.object({ ...base, amount: z.number().min(0).max(5000), recordedAt: z.number(), source }),
+  sleep: z.object({ ...base, bedAt: z.number(), wakeAt: z.number(), quality: z.number().int().min(1).max(4).optional(), notes: z.string().optional(), source }),
+  activity: z.object({
+    ...base,
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    steps: z.number().int().min(0).max(200_000).optional(),
+    activeMinutes: z.number().min(0).max(1440).optional(),
+    distance: z.number().min(0).max(500).optional(),
+    source,
+  }),
 } satisfies Record<DataTable, z.ZodType>
 
 const backupSchema = z.object({
