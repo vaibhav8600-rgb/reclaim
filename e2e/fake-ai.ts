@@ -30,6 +30,17 @@ export const ANSWERS: { [T in AiTask]: AiOutput<T> } = {
     summary: 'The report states there is thickening of the common extensor tendon with no tear.',
     findings: [{ label: 'Common extensor tendinopathy', detail: 'The tendon on the outside of the elbow is thickened (irritated), without a tear.' }],
     questions: ['Does this change my rehab plan?'],
+    document: { title: 'Blood test: vitamin D and CBC', kind: 'lab', date: '2026-09-01' },
+    facts: [
+      // No flag from the AI: "Low" must be worked out from the printed range.
+      { kind: 'lab', name: 'Vitamin D (25-OH)', value: 18, unit: 'ng/mL', range: '30 - 100', evidence: '25-OH Vitamin D  18.0  ng/mL  30 - 100' },
+      { kind: 'lab', name: 'Haemoglobin', value: 14.2, unit: 'g/dL', range: '13.0-17.0', evidence: 'Haemoglobin 14.2 g/dL 13.0-17.0' },
+      // A range too complex to trust: the report's own flag is kept.
+      { kind: 'lab', name: 'Vitamin B12', value: 190, unit: 'pg/mL', range: 'Deficient < 200, Normal 200 - 900', flag: 'low', evidence: 'Vitamin B12 190 pg/mL L' },
+      { kind: 'lab', name: 'Urine pus cells', detail: 'Occasional', evidence: 'Pus cells: Occasional /hpf' },
+      { kind: 'condition', name: 'Lateral epicondylitis', detail: 'Right side', evidence: 'Impression: right lateral epicondylitis' },
+      { kind: 'medication', name: 'Cholecalciferol 60,000 IU', detail: 'Once a week for 8 weeks', evidence: 'Tab. Cholecalciferol 60K IU weekly x 8 wks' },
+    ],
   },
   'estimate-meal': {
     isFood: true,
@@ -40,6 +51,12 @@ export const ANSWERS: { [T in AiTask]: AiOutput<T> } = {
       { name: 'Broccoli', amount: '1 cup', protein: 3, calories: 30 },
     ],
     assumptions: ['Chicken portion judged from a standard dinner plate.'],
+  },
+  'health-summary': {
+    overview: 'Your records cover two blood tests (30 Jul and 18 Sept 2026) and an MRI of the right elbow. They record lateral epicondylitis and a weekly vitamin D supplement.',
+    attention: [{ label: 'Vitamin D (25-OH)', detail: '16 ng/mL on 30 Jul (range 30 - 100), below the range. It measures the vitamin D stored in your body.' }],
+    trends: ['Vitamin D rose from 16 ng/mL on 30 Jul to 34 ng/mL on 18 Sept, now within the printed range.'],
+    questions: ['Should I keep taking the vitamin D supplement now that my level is in range?'],
   },
   'report-narrative': {
     summary: 'Over the last 30 days the patient logged elbow pain on most days, averaging 2.9, with a gradual decrease.',
@@ -59,7 +76,7 @@ export interface AiRequest {
  * Returns the list of requests the app made, for assertions.
  * With `stream`, answers are sent the way the real server streams them (events carrying pieces of text).
  */
-export async function mockAi(page: Page, opts: { configured?: boolean; fail?: { status: number; error: string }; stream?: boolean } = {}) {
+export async function mockAi(page: Page, opts: { configured?: boolean; fail?: { status: number; error: string }; stream?: boolean; answer?: (task: AiTask, n: number) => unknown } = {}) {
   const requests: AiRequest[] = []
   await page.route('**/api/ai', async (route) => {
     const req = route.request()
@@ -67,13 +84,14 @@ export async function mockAi(page: Page, opts: { configured?: boolean; fail?: { 
     const body = req.postDataJSON() as { task: AiTask; input: Record<string, unknown>; stream?: boolean }
     requests.push({ ...body, authorization: req.headers()['authorization'] })
     if (opts.fail) return route.fulfill({ status: opts.fail.status, json: { error: opts.fail.error } })
+    const answer = opts.answer?.(body.task, requests.filter((r) => r.task === body.task).length - 1) ?? ANSWERS[body.task]
     if (opts.stream && body.stream) {
-      const text = JSON.stringify(ANSWERS[body.task])
+      const text = JSON.stringify(answer)
       const pieces = [text.slice(0, 20), text.slice(20, 60), text.slice(60)]
-      const events = [...pieces.map((d) => ({ t: 'text', d })), { t: 'done', result: ANSWERS[body.task], model: 'gemini-test' }]
+      const events = [...pieces.map((d) => ({ t: 'text', d })), { t: 'done', result: answer, model: 'gemini-test' }]
       return route.fulfill({ contentType: 'application/x-ndjson', body: events.map((e) => JSON.stringify(e)).join('\n') + '\n' })
     }
-    return route.fulfill({ json: { result: ANSWERS[body.task], model: 'gemini-test' } })
+    return route.fulfill({ json: { result: answer, model: 'gemini-test' } })
   })
   return requests
 }

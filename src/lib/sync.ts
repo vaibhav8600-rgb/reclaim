@@ -3,7 +3,7 @@ import { db, type MedicalDocument } from '../db/db'
 import { getMeta, newId, onLocalChange, setMeta } from '../db/repo'
 import { deriveKey, newVaultParams, open, openText, readHeader, seal, WrongPassphraseError, type VaultParams } from './crypto'
 import { deleteFile, downloadFile, DriveAuthError, listFiles, uploadFile, type DriveFile } from './drive'
-import { cachedToken, fetchEmail } from './google'
+import { cachedToken, fetchEmail, forgetToken } from './google'
 
 /**
  * Google Drive sync. Everything is encrypted on the device before upload.
@@ -83,9 +83,24 @@ export async function connectDrive(token: string, passphrase: string, existing: 
   await syncNow(token)
 }
 
-export async function disconnectDrive() {
-  await Promise.all(['vault', 'drive', 'lastMergedSnapshot', 'lastSyncAt'].map((k) => db.meta.delete(k)))
-  setStatus({ state: 'idle' })
+/**
+ * Sign out: back up everything to Drive first, then clear this device. Signing in again (with the passphrase)
+ * brings it all back. If the backup fails, nothing is cleared.
+ */
+export async function signOut(token: string) {
+  await syncNow(token)
+  await syncNow(token) // a run already in progress may have started before the latest edits
+  forgetToken()
+  await db.delete()
+}
+
+/** Delete every Reclaim file in the Drive app folder: snapshots and encrypted records. */
+export async function deleteDriveData(token: string) {
+  for (let round = 0; round < 50; round++) {
+    const files = await listFiles(token, 'reclaim-') // 100 per page: repeat until none are left
+    if (!files.length) return
+    await Promise.all(files.map((f) => deleteFile(token, f.id)))
+  }
 }
 
 let running: Promise<void> | undefined
@@ -148,7 +163,7 @@ async function run(token: string | undefined) {
   } catch (e) {
     setStatus({
       state: 'error',
-      error: e instanceof WrongPassphraseError ? 'Your Drive backup was encrypted with a different passphrase. Disconnect and reconnect to enter it.' : (e as Error).message,
+      error: e instanceof WrongPassphraseError ? 'Your Drive backup was encrypted with a different passphrase. Sign out and restore to enter it.' : (e as Error).message,
       needsSignIn: e instanceof DriveAuthError,
     })
     throw e

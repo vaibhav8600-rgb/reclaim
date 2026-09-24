@@ -11,6 +11,10 @@ export const SYMPTOM_TYPES = ['pain', 'stiffness', 'swelling', 'weakness', 'numb
 export const MEASUREMENT_KINDS = ['weight', 'waist', 'grip', 'rom', 'walk'] as const
 export const TIME_OF_DAY = ['morning', 'afternoon', 'evening', 'night'] as const
 export const DOCUMENT_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'] as const
+export const DOCUMENT_KIND_VALUES = ['imaging', 'lab', 'prescription', 'letter', 'physio', 'other'] as const
+/** What a fact pulled from a medical record is about. */
+export const FACT_KINDS = ['condition', 'medication', 'lab', 'imaging', 'procedure', 'allergy', 'vital'] as const
+export const FACT_FLAGS = ['low', 'high', 'abnormal'] as const
 
 /** Vercel functions accept ~4.5 MB request bodies; base64 adds a third. */
 export const MAX_REQUEST_BYTES = 4_400_000
@@ -43,6 +47,7 @@ export const inputs = {
   'weekly-summary': z.object({ context }),
   ask: z.object({ question: z.string().min(2).max(500), context }),
   'report-narrative': z.object({ context }),
+  'health-summary': z.object({ context }),
 } as const
 
 export type AiTask = keyof typeof inputs
@@ -52,6 +57,37 @@ export const AI_TASKS = Object.keys(inputs) as AiTask[]
 
 const text = (max: number) => z.string().max(max)
 const list = (max: number, len = 400) => z.array(text(len)).max(max)
+
+/*
+ * Reading a record is a long answer, and a model on the plain fallback path (no enforced schema) can slip:
+ * a question wrapped as {"question": "…"}, a number as "18.0", a field too long. Those are repaired here
+ * instead of losing the whole record; an item that can't be repaired is dropped, not the answer.
+ */
+const cut = (max: number) => (s: string) => (s.length > max ? `${s.slice(0, max - 1)}…` : s)
+/** A string, repaired: {"question": "…"} → "…", 12 → "12", too long → cut. */
+const loose = (max: number) =>
+  z
+    .preprocess((v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.values(v).find((x) => typeof x === 'string') : typeof v === 'number' ? String(v) : v), z.string())
+    .transform(cut(max))
+/** A list that keeps the items that are (or can be repaired to be) valid, up to `max`. */
+const keepValid = <T extends z.ZodType>(item: T, max: number) =>
+  z.array(z.unknown()).transform((list) => list.flatMap((x) => {
+    const r = item.safeParse(x)
+    return r.success ? [r.data as z.output<T>] : []
+  }).slice(0, max))
+
+/** One fact as the AI read it from a record, with the words it came from. Saved only after review. */
+export const extractedFact = z.object({
+  kind: z.enum(FACT_KINDS),
+  name: loose(120).refine((s) => s.trim().length > 0),
+  value: z.preprocess((v) => (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : v), z.number().optional()).catch(undefined),
+  unit: loose(40).optional().catch(undefined),
+  range: loose(200).optional().catch(undefined),
+  flag: z.enum(FACT_FLAGS).optional().catch(undefined),
+  detail: loose(400).optional().catch(undefined),
+  evidence: loose(300).catch(''),
+})
+export type ExtractedFact = z.infer<typeof extractedFact>
 
 export const outputs = {
   'structure-note': z.object({
@@ -83,10 +119,15 @@ export const outputs = {
     activities: list(10, 120),
   }),
   'summarize-document': z.object({
-    readable: z.enum(['yes', 'partly', 'no']),
-    summary: text(1200),
-    findings: z.array(z.object({ label: text(120), detail: text(400) })).max(15),
-    questions: list(8),
+    readable: z.enum(['yes', 'partly', 'no']).catch('partly'),
+    summary: loose(1200).catch(''),
+    findings: keepValid(z.object({ label: loose(120), detail: loose(400) }), 15),
+    questions: keepValid(loose(400), 8),
+    /** What the document itself says it is, used to file records added in bulk. */
+    document: z
+      .object({ title: loose(80).catch(''), kind: z.enum(DOCUMENT_KIND_VALUES).catch('other'), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).catch('') })
+      .catch({ title: '', kind: 'other', date: '' }),
+    facts: keepValid(extractedFact, 80),
   }),
   'estimate-meal': z.object({
     isFood: z.boolean(),
@@ -120,6 +161,12 @@ export const outputs = {
   'report-narrative': z.object({
     summary: text(1500),
     keyChanges: list(8),
+    questions: list(8),
+  }),
+  'health-summary': z.object({
+    overview: text(1500),
+    attention: z.array(z.object({ label: text(120), detail: text(500) })).max(15),
+    trends: list(10),
     questions: list(8),
   }),
 } satisfies Record<AiTask, z.ZodType>

@@ -14,7 +14,7 @@ import { formatWhen, relativeAge } from '../../lib/dates'
 import { formatBytes, isIOS, isStandalone, isTouch, requestPersistence, storageStatus } from '../../lib/platform'
 import { toast } from '../../lib/toast'
 import { cachedToken, forgetToken, GOOGLE_CLIENT_ID, prepareGoogle, requestToken } from '../../lib/google'
-import { disconnectDrive, syncNow, useSyncStatus, type DriveLink } from '../../lib/sync'
+import { deleteDriveData, signOut, syncNow, useSyncStatus, type DriveLink } from '../../lib/sync'
 
 const TABLE_LABELS: Record<DataTable, string> = {
   profile: 'Profile',
@@ -28,6 +28,8 @@ const TABLE_LABELS: Record<DataTable, string> = {
   documents: 'Documents',
   meals: 'Meals',
   savedMeals: 'Saved Meals',
+  facts: 'Health Profile',
+  water: 'Water',
 }
 
 const TILE_INSET = '3.625rem'
@@ -98,11 +100,23 @@ function DriveSection() {
     else requestToken(link?.email).then(run, (e: Error) => toast(e.message))
   }
 
-  async function disconnect() {
-    if (!confirm('Disconnect Google Drive? Your data stays on this iPhone, and your encrypted backups stay in Drive.')) return
-    forgetToken()
-    await disconnectDrive()
-    toast('Google Drive disconnected')
+  const [signingOut, setSigningOut] = useState<'confirm' | 'working'>()
+
+  /** Called from the tap, so Google's popup (if a new sign-in is needed) isn't blocked. */
+  function signOutTapped() {
+    const run = async (t: string) => {
+      setSigningOut('working')
+      try {
+        await signOut(t)
+        location.replace('/')
+      } catch (e) {
+        setSigningOut(undefined)
+        toast(`Couldn’t back up, so nothing was removed. ${(e as Error).message}`)
+      }
+    }
+    const token = cachedToken()
+    if (token) void run(token)
+    else requestToken(link?.email).then(run, (e: Error) => toast(e.message))
   }
 
   if (!GOOGLE_CLIENT_ID) {
@@ -145,9 +159,21 @@ function DriveSection() {
           value={syncing ? sync.step : lastSyncAt ? `Synced ${relativeAge(lastSyncAt)}` : 'Not synced yet'}
         />
         <Row icon={<IconTile icon={RefreshCw} color="green" />} title={syncing ? 'Syncing…' : sync.needsSignIn ? 'Sign In and Sync' : 'Sync Now'} tone="accent" onClick={syncing ? undefined : syncTapped} />
-        <Row icon={<IconTile icon={LogOut} color="gray" />} title="Disconnect" tone="danger" onClick={disconnect} />
+        <Row icon={<IconTile icon={LogOut} color="gray" />} title="Sign Out" tone="danger" onClick={signingOut ? undefined : () => setSigningOut('confirm')} />
       </Group>
       {lastSyncAt && <p className="section-footer">Last synced {formatWhen(lastSyncAt)}.</p>}
+      {signingOut && (
+        <div className="card mt-3 p-4" role="alertdialog" aria-label="Sign out">
+          <p className="font-semibold">Sign out of Reclaim on this iPhone?</p>
+          <p className="mt-1 text-[0.9375rem] text-muted">
+            Everything is backed up to Google Drive first, then removed from this iPhone. To get it all back, open Reclaim, tap Restore from Google Drive and enter your passphrase.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <button type="button" className="btn btn-quiet" onClick={() => setSigningOut(undefined)} disabled={signingOut === 'working'}>Cancel</button>
+            <button type="button" className="btn btn-primary" onClick={signOutTapped} disabled={signingOut === 'working'}>{signingOut === 'working' ? 'Backing Up…' : 'Back Up and Sign Out'}</button>
+          </div>
+        </div>
+      )}
     </Section>
   )
 }
@@ -390,7 +416,7 @@ function DemoDataSection() {
     }
   }
   return (
-    <Section title="Developer" footer="Only in dev builds. Adds ~75 days of realistic sample data (merged, nothing is overwritten). Use Delete All Data below to start fresh.">
+    <Section title="Developer" footer="Only in dev builds. Adds ~75 days of realistic sample data (merged, nothing is overwritten). Use Delete Everything below to start fresh.">
       <Group inset={TILE_INSET}>
         <Row icon={<IconTile icon={FileUp} color="orange" />} title={busy ? 'Loading…' : 'Load Demo Data'} tone="accent" onClick={busy ? undefined : load} />
       </Group>
@@ -399,17 +425,42 @@ function DemoDataSection() {
 }
 
 function DangerSection() {
+  const link = useMeta<DriveLink>('drive')
   const [confirmText, setConfirmText] = useState('')
-  async function wipe() {
-    await deleteEverything()
-    location.replace('/')
+  const [alsoDrive, setAlsoDrive] = useState(false)
+  const [working, setWorking] = useState(false)
+  const withDrive = !!GOOGLE_CLIENT_ID && (!!link || alsoDrive)
+
+  /** A true fresh start: this iPhone, and (when chosen, or when connected) the encrypted backups in Drive. */
+  function wipe() {
+    const run = async (token?: string) => {
+      setWorking(true)
+      try {
+        if (token) await deleteDriveData(token)
+        await deleteEverything()
+        forgetToken()
+        location.replace('/')
+      } catch (e) {
+        setWorking(false)
+        toast(`Nothing was deleted: ${(e as Error).message}`)
+      }
+    }
+    if (!withDrive) return void run()
+    const token = cachedToken()
+    if (token) void run(token)
+    else requestToken(link?.email).then(run, (e: Error) => toast(e.message)) // straight from the tap: the popup isn't blocked
   }
+
   return (
-    <Section title="Delete Data" footer='Permanently removes everything from this iPhone. Make a backup first — this can’t be undone. Type "DELETE" to confirm.'>
+    <Section
+      title="Delete Everything"
+      footer={`${withDrive ? 'Permanently deletes everything from this iPhone and your encrypted backups in Google Drive — a fresh start.' : 'Permanently deletes everything from this iPhone.'} This can’t be undone.${link ? ' To keep a copy you can restore, use Sign Out instead.' : ''} Type "DELETE" to confirm.`}
+    >
       <Group>
+        {GOOGLE_CLIENT_ID && !link && <Toggle label="Also Delete Google Drive Backups" checked={alsoDrive} onChange={setAlsoDrive} />}
         <input className="cell bg-transparent outline-none placeholder:text-faint" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder='Type "DELETE"' autoCapitalize="characters" autoComplete="off" aria-label='Type "DELETE" to confirm' />
-        <button className="cell cell-press justify-center text-danger disabled:opacity-40" disabled={confirmText !== 'DELETE'} onClick={wipe}>
-          Delete All Data
+        <button className="cell cell-press justify-center text-danger disabled:opacity-40" disabled={confirmText !== 'DELETE' || working} onClick={wipe}>
+          {working ? 'Deleting…' : 'Delete Everything'}
         </button>
       </Group>
     </Section>

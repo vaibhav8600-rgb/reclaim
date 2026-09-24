@@ -1,4 +1,5 @@
 import { Dexie, type Table } from 'dexie'
+import type { ExtractedFact, FACT_FLAGS, FACT_KINDS } from '../../shared/ai'
 import { STARTER_EXERCISES } from '../lib/exercises'
 
 /** Where a value came from. AI values stay `ai_estimate` until the user confirms them. */
@@ -19,6 +20,8 @@ export interface Profile extends Base {
   name: string
   /** Daily protein goal in grams. */
   proteinTarget?: number
+  /** Daily water goal in ml. */
+  waterTarget?: number
 }
 
 export interface Injury extends Base {
@@ -143,6 +146,41 @@ export interface DocumentSummary {
   questions: string[]
   model?: string
   createdAt: number
+  /** Document details as the AI read them (title, kind, date). */
+  document?: { title: string; kind: DocumentKind; date: string }
+  /** Facts the AI found, waiting for review. Saved to `facts` only when the user confirms them. */
+  facts?: ExtractedFact[]
+  /** When the user reviewed `facts`. */
+  reviewedAt?: number
+}
+
+export type FactKind = (typeof FACT_KINDS)[number]
+
+/** A confirmed fact from the medical history: a diagnosis, medicine, lab result, scan finding… */
+export interface HealthFact extends Base {
+  kind: FactKind
+  name: string
+  value?: number
+  unit?: string
+  /** Reference range as printed on the report. */
+  range?: string
+  flag?: (typeof FACT_FLAGS)[number]
+  detail?: string
+  /** Date on the record, YYYY-MM-DD. */
+  date: string
+  /** The record it came from. */
+  documentId?: string
+  /** The printed words it was read from. */
+  evidence?: string
+  source: Source
+}
+
+/** A drink of water. */
+export interface Drink extends Base {
+  /** ml */
+  amount: number
+  recordedAt: number
+  source: Source
 }
 
 /**
@@ -209,6 +247,8 @@ export const db = new Dexie('reclaim') as Dexie & {
   files: Table<StoredFile, string>
   meals: Table<Meal, string>
   savedMeals: Table<SavedMeal, string>
+  facts: Table<HealthFact, string>
+  water: Table<Drink, string>
   meta: Table<Meta, string>
 }
 
@@ -239,10 +279,15 @@ db.version(4).stores({
   savedMeals: 'id, updatedAt',
 })
 
+db.version(5).stores({
+  facts: 'id, kind, date, documentId, updatedAt',
+  water: 'id, recordedAt, updatedAt',
+})
+
 db.on('populate', (tx) => {
   tx.table('exercises').bulkAdd(STARTER_EXERCISES)
 })
 
 /** Tables included in backups and future sync. */
-export const DATA_TABLES = ['profile', 'injuries', 'symptoms', 'measurements', 'journal', 'exercises', 'prescriptions', 'sessions', 'documents', 'meals', 'savedMeals'] as const
+export const DATA_TABLES = ['profile', 'injuries', 'symptoms', 'measurements', 'journal', 'exercises', 'prescriptions', 'sessions', 'documents', 'meals', 'savedMeals', 'facts', 'water'] as const
 export type DataTable = (typeof DATA_TABLES)[number]

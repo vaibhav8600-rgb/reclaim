@@ -8,6 +8,8 @@ export interface ModelCall {
   text: string
   file?: { mimeType: string; data: string }
   schema: object
+  /** Output token cap, for tasks with long answers (default MAX_OUTPUT_TOKENS). Longer answers also get more time. */
+  maxOutputTokens?: number
 }
 
 export interface Provider {
@@ -68,7 +70,7 @@ export function geminiProvider(apiKey: string, models: string[] = DEFAULT_MODELS
       generationConfig: {
         temperature: 0.2,
         responseMimeType: 'application/json',
-        ...(tuned ? { responseJsonSchema: c.schema, maxOutputTokens: MAX_OUTPUT_TOKENS, thinkingConfig: { thinkingLevel: THINKING_LEVEL } } : {}),
+        ...(tuned ? { responseJsonSchema: c.schema, maxOutputTokens: c.maxOutputTokens ?? MAX_OUTPUT_TOKENS, thinkingConfig: { thinkingLevel: THINKING_LEVEL } } : {}),
       },
     }
     const method = streaming ? 'streamGenerateContent?alt=sse' : 'generateContent'
@@ -91,7 +93,7 @@ export function geminiProvider(apiKey: string, models: string[] = DEFAULT_MODELS
   async function tryModel(model: string, c: ModelCall, stream?: { onText(chunk: string): void; onReset(): void }): Promise<Attempt> {
     const controller = new AbortController()
     const firstByte = setTimeout(() => controller.abort(), stream ? FIRST_BYTE_TIMEOUT_MS : ATTEMPT_TIMEOUT_MS)
-    const overall = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS + 15_000)
+    const overall = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS + 15_000 + Math.max(0, (c.maxOutputTokens ?? 0) - MAX_OUTPUT_TOKENS) * 8) // ~125 tokens/s
     try {
       let r = await request(model, c, true, !!stream, controller.signal)
       // A model may reject the schema or thinking settings: retry it once with a plain request.

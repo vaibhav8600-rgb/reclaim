@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Info, Plus, Utensils } from 'lucide-react'
 import { db, type SavedMeal } from '../../db/db'
-import { useInjuryMap, useMeals, useProfile, useSavedMeals } from '../../db/hooks'
+import { useInjuryMap, useMeals, useProfile, useSavedMeals, useWater } from '../../db/hooks'
 import { alive, save } from '../../db/repo'
 import { ENTRY_INSET, EntryRow } from '../../components/EntryRow'
 import { MLink } from '../../components/MLink'
@@ -11,14 +11,15 @@ import { daysAgo, startOfDay } from '../../lib/dates'
 import { haptic } from '../../lib/haptics'
 import { dailyProtein, grams, slotFor } from '../../lib/nutrition'
 import { toast } from '../../lib/toast'
-import { TodayCard } from './components'
+import { ml, TodayCard, WaterCard } from './components'
 
 export function NutritionPage() {
   const profile = useProfile()
   const week = useMeals(daysAgo(6))
   const saved = useSavedMeals()
   const injuries = useInjuryMap()
-  if (!week || !saved) return null
+  const water = useWater(startOfDay(Date.now()))
+  if (!week || !saved || !water) return null
 
   const target = profile?.proteinTarget
   const days = dailyProtein(week, 7)
@@ -31,6 +32,10 @@ export function NutritionPage() {
 
       <Section prominent title="Today">
         <TodayCard protein={today.protein} calories={today.calories} meals={today.meals} target={target} />
+      </Section>
+
+      <Section prominent title="Water">
+        <WaterCard total={water.reduce((a, d) => a + d.amount, 0)} target={profile?.waterTarget} />
       </Section>
 
       <Section prominent title="Last 7 Days">
@@ -68,7 +73,22 @@ export function NutritionPage() {
         )}
       </Section>
 
-      <GoalSection target={target} />
+      <GoalSection
+        field="proteinTarget"
+        title="Daily Protein Goal"
+        unit="g"
+        target={target}
+        footer={(weight, goal) => `${weight && goal ? `That’s ${Math.round((goal / weight) * 10) / 10} g per kg of your latest weight (${weight} kg). ` : ''}Your clinician or a dietitian can suggest the right goal for your recovery.`}
+      />
+      <GoalSection
+        field="waterTarget"
+        title="Daily Water Goal"
+        unit="ml"
+        target={profile?.waterTarget}
+        footer={(weight) =>
+          `A common starting point is 30–35 ml per kg of body weight${weight ? ` (${(Math.round((weight * 30) / 50) * 50).toLocaleString()}–${ml(Math.round((weight * 35) / 50) * 50)} for ${weight} kg)` : ''}, more in heat or with exercise. With heart or kidney problems, ask your clinician first — some people need to drink less.`
+        }
+      />
     </div>
   )
 }
@@ -146,30 +166,34 @@ function SavedMealRow({ meal }: { meal: SavedMeal }) {
   )
 }
 
-/** Daily protein goal, with its size relative to the latest logged body weight when there is one. */
-function GoalSection({ target }: { target?: number }) {
+/** A daily goal (protein or water), explained against the latest logged body weight when there is one. */
+function GoalSection({ field, title, unit, target, footer }: {
+  field: 'proteinTarget' | 'waterTarget'
+  title: string
+  unit: string
+  target?: number
+  footer: (weightKg: number | undefined, goal: number | undefined) => string
+}) {
   const [value, setValue] = useState<string>()
   const weight = useLiveQuery(async () => (await db.measurements.where('kind').equals('weight').toArray()).filter(alive).sort((a, b) => b.recordedAt - a.recordedAt)[0], [])
   const shown = value ?? (target ? String(target) : '')
   const typed = parseFloat(shown)
-  const perKg = weight && weight.unit === 'kg' && typed > 0 ? Math.round((typed / weight.value) * 10) / 10 : undefined
+  const kg = weight?.unit === 'kg' ? weight.value : undefined
+  const name = title.replace('Daily ', '').toLowerCase()
 
   async function commit() {
     if (value === undefined) return
     const next = parseFloat(value)
-    const proteinTarget = Number.isFinite(next) && next > 0 ? Math.round(next) : undefined
-    if (proteinTarget === target) return
-    const profile = await db.profile.get('me')
-    await save(db.profile, { id: 'me', name: profile?.name ?? '', proteinTarget })
+    const goal = Number.isFinite(next) && next > 0 ? Math.round(next) : undefined
     setValue(undefined)
-    toast(proteinTarget ? `Daily protein goal: ${proteinTarget} g` : 'Protein goal removed', target ? { label: 'Undo', onClick: () => save(db.profile, { id: 'me', name: profile?.name ?? '', proteinTarget: target }) } : undefined)
+    if (goal === target) return
+    const profile = await db.profile.get('me')
+    await save(db.profile, { id: 'me', name: profile?.name ?? '', [field]: goal })
+    toast(goal ? `Daily ${name}: ${goal.toLocaleString()} ${unit}` : `${name[0].toUpperCase()}${name.slice(1)} removed`, target ? { label: 'Undo', onClick: () => save(db.profile, { id: 'me', name: profile?.name ?? '', [field]: target }) } : undefined)
   }
 
   return (
-    <Section
-      title="Daily Protein Goal"
-      footer={`${perKg ? `That’s ${perKg} g per kg of your latest weight (${weight!.value} kg). ` : ''}Your clinician or a dietitian can suggest the right goal for your recovery.`}
-    >
+    <Section title={title} footer={footer(kg, typed > 0 ? typed : undefined)}>
       <Group>
         <label className="cell">
           <span className="flex-1">Goal</span>
@@ -181,12 +205,11 @@ function GoalSection({ target }: { target?: number }) {
             onBlur={commit}
             onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
             placeholder="None"
-            aria-label="Daily protein goal (g)"
+            aria-label={`${title} (${unit})`}
           />
-          <span className="text-muted">g</span>
+          <span className="text-muted">{unit}</span>
         </label>
       </Group>
     </Section>
   )
 }
-

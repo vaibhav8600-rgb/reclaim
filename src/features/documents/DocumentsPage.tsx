@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { FolderHeart, Plus } from 'lucide-react'
+import { Files, FolderHeart, Plus } from 'lucide-react'
 import { useDocuments, useInjuryMap } from '../../db/hooks'
 import { MLink } from '../../components/MLink'
-import { Chips, EmptyState, GlassButton, Group, NavBar, Section } from '../../components/ui'
+import { Chips, EmptyState, GlassButton, Group, IconTile, NavBar, Row, Section } from '../../components/ui'
 import { DOCUMENT_KINDS, DocumentRow } from './kinds'
 import type { DocumentKind } from '../../db/db'
 
@@ -24,10 +24,20 @@ export function DocumentsPage() {
           icon={FolderHeart}
           title="Keep your records together"
           body="Add scans, lab reports, prescriptions and clinic letters. They stay on this iPhone and, if you connect Google Drive, are backed up encrypted."
-          action={<MLink to="/documents/new" className="btn btn-primary"><Plus size={20} /> Add Document</MLink>}
+          action={
+            <div className="flex flex-col items-center gap-2">
+              <MLink to="/documents/new" className="btn btn-primary"><Plus size={20} /> Add Document</MLink>
+              <MLink to="/documents/import" className="btn btn-quiet">Add Several at Once</MLink>
+            </div>
+          }
         />
       ) : (
         <>
+          <Section>
+            <Group inset="3.625rem">
+              <Row icon={<IconTile icon={Files} color="blue" />} title="Add Several at Once" subtitle="AI files them and finds their facts" to="/documents/import" />
+            </Group>
+          </Section>
           <Section>
             <Chips options={[{ value: 'all' as const, label: 'All' }, ...DOCUMENT_KINDS.filter((k) => docs.some((d) => d.kind === k.value))]} value={kind} onChange={setKind} />
           </Section>

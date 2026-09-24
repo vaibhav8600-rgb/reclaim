@@ -6,7 +6,7 @@
  *
  * Timestamps are relative to `now` in the local timezone. Nothing is ever in the future.
  */
-import type { Exercise, FoodItem, Injury, JournalEntry, Meal, MealSlot, Measurement, Prescription, Profile, RehabSession, SavedMeal, SessionItem, Symptom } from '../../src/db/db'
+import type { Drink, Exercise, FoodItem, HealthFact, Injury, JournalEntry, Meal, MealSlot, Measurement, Prescription, Profile, RehabSession, SavedMeal, SessionItem, Symptom } from '../../src/db/db'
 
 export interface DemoBackup {
   app: 'reclaim'
@@ -23,6 +23,8 @@ export interface DemoBackup {
     sessions: RehabSession[]
     meals: Meal[]
     savedMeals: SavedMeal[]
+    facts: HealthFact[]
+    water: Drink[]
   }
 }
 
@@ -81,7 +83,7 @@ export function generateDemoData({ now = Date.now(), seed = 7 }: { now?: number;
   const stamp = (t: number) => ({ createdAt: t, updatedAt: t })
   const past = (t: number) => t <= now - 60_000
 
-  const profile: Profile[] = [{ id: 'me', name: 'Alex', proteinTarget: 130, ...stamp(at(75, 9)) }]
+  const profile: Profile[] = [{ id: 'me', name: 'Alex', proteinTarget: 130, waterTarget: 2500, ...stamp(at(75, 9)) }]
 
   const injuries: Injury[] = [
     {
@@ -247,10 +249,32 @@ export function generateDemoData({ now = Date.now(), seed = 7 }: { now?: number;
     id: `demo-saved-${i}`, name: m.name, items: m.items, protein: sum(m.items, 'protein'), calories: sum(m.items, 'calories'), ...stamp(at(21, 9) + i),
   }))
 
+  // A week of water: glasses through the day, fewer on some days.
+  const water: Drink[] = []
+  for (let d = 6; d >= 0; d--) {
+    for (const h of [8, 10, 12, 14, 16, 18, 20]) {
+      const t = at(d, h, Math.floor(rand() * 50))
+      if (past(t) && rand() < 0.8) water.push({ id: id('water'), amount: rand() < 0.3 ? 500 : 250, recordedAt: t, source: 'user', ...stamp(t) })
+    }
+  }
+
+  // Facts confirmed from two blood tests and the MRI report (as if read by AI and reviewed).
+  const dateKey = (d: number) => { const x = new Date(at(d, 12)); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}` }
+  const fact = (f: Omit<HealthFact, 'id' | 'createdAt' | 'updatedAt' | 'source' | 'date'>, d: number): HealthFact => ({ id: id('fact'), source: 'user_confirmed', ...stamp(at(d, 18)), ...f, date: dateKey(d) })
+  const facts: HealthFact[] = [
+    fact({ kind: 'condition', name: 'Lateral epicondylitis', detail: 'Right elbow', evidence: 'Impression: right lateral epicondylitis' }, 60),
+    fact({ kind: 'imaging', name: 'MRI right elbow', detail: 'Thickening of the common extensor tendon origin with no tear', evidence: 'Common extensor origin thickened, no tear' }, 60),
+    fact({ kind: 'medication', name: 'Cholecalciferol 60,000 IU', detail: 'Once a week for 8 weeks', evidence: 'Tab. Cholecalciferol 60K IU weekly x 8 wks' }, 55),
+    fact({ kind: 'lab', name: 'Vitamin D (25-OH)', value: 16, unit: 'ng/mL', range: '30 - 100', flag: 'low', evidence: '25-OH Vitamin D 16.0 ng/mL 30 - 100' }, 55),
+    fact({ kind: 'lab', name: 'Haemoglobin', value: 14.1, unit: 'g/dL', range: '13.0 - 17.0', evidence: 'Haemoglobin 14.1 g/dL' }, 55),
+    fact({ kind: 'lab', name: 'Vitamin D (25-OH)', value: 34, unit: 'ng/mL', range: '30 - 100', evidence: '25-OH Vitamin D 34.2 ng/mL 30 - 100' }, 5),
+    fact({ kind: 'lab', name: 'CRP', value: 2.1, unit: 'mg/L', range: '< 5', evidence: 'C-Reactive Protein 2.1 mg/L' }, 5),
+  ]
+
   return {
     app: 'reclaim',
     schemaVersion: 1,
     exportedAt: new Date(now).toISOString(),
-    data: { profile, injuries, symptoms, measurements, journal, exercises: [], prescriptions, sessions, meals, savedMeals },
+    data: { profile, injuries, symptoms, measurements, journal, exercises: [], prescriptions, sessions, meals, savedMeals, facts, water },
   }
 }

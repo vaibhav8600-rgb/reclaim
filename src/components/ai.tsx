@@ -100,7 +100,7 @@ export function AiConsentSheet({ onAccept, onClose }: { onAccept: () => void; on
           </button>
         </div>
         <div className="card rows mt-4 overflow-hidden" style={{ ['--inset' as string]: '3.625rem' }}>
-          <Point icon={Eye} color="blue" title="Only what's needed" body="Each feature sends just its part of your log — the note, document or meal photo, or a summary of recent entries. Never your name." />
+          <Point icon={Eye} color="blue" title="Only what's needed" body="Each feature sends just its part of your log — the note, record or meal photo, or a summary of recent entries and your confirmed health profile. Never your name." />
           <Point icon={Lock} color="green" title="Through your own server" body="Sent through Reclaim's server to Google's Gemini (text requests go to Groq instead if Gemini is busy and a Groq key is set up). With a paid Gemini API key, Google doesn't use it to improve its products." />
           <Point icon={ShieldCheck} color="indigo" title="Drafts, not diagnoses" body="AI suggests; you review before anything is saved. It never diagnoses or changes your treatment." />
         </div>

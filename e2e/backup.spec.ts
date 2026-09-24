@@ -35,7 +35,7 @@ test('export → delete everything → restore gives back identical data', async
   expect(file.app).toBe('reclaim')
   await expect(page.getByText(/^Last backup /)).toBeVisible()
 
-  const del = page.getByRole('button', { name: 'Delete All Data' })
+  const del = page.getByRole('button', { name: 'Delete Everything' })
   await expect(del).toBeDisabled()
   await page.getByPlaceholder('Type "DELETE"').fill('delete')
   await expect(del).toBeDisabled()

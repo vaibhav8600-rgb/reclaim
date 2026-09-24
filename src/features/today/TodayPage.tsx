@@ -2,20 +2,21 @@ import { useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router'
 import { MLink } from '../../components/MLink'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, CloudUpload, Plus, Ruler, Smartphone, Sparkles, UserRound } from 'lucide-react'
+import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, CloudDownload, CloudUpload, HeartPulse, Plus, Ruler, Smartphone, Sparkles, UserRound } from 'lucide-react'
 import { db } from '../../db/db'
-import { isOpenInjury, useEntries, useInjuries, useInjuryMap, useMeals, useMeta, usePrescriptions, useProfile, useSymptomsSince } from '../../db/hooks'
+import { isOpenInjury, useEntries, useInjuries, useInjuryMap, useMeals, useMeta, usePrescriptions, useProfile, useSymptomsSince, useWater } from '../../db/hooks'
 import { alive, setMeta } from '../../db/repo'
 import { ENTRY_INSET, EntryRow } from '../../components/EntryRow'
 import { PainChart } from '../../components/PainChart'
 import { EmptyState, GlassButton, Group, NavBar, Section, SeverityBadge, Tip } from '../../components/ui'
 import { kindInfo, severityWord } from '../../lib/constants'
 import { daysAgo, formatLongDate, relativeAge, startOfDay } from '../../lib/dates'
+import { GOOGLE_CLIENT_ID } from '../../lib/google'
 import { isIOS, isStandalone } from '../../lib/platform'
 import { dailySeries, round1, windowAverage } from '../../lib/stats'
 import { WeekCard } from '../rehab/components'
 import type { StoredSummary } from '../insights/InsightsPage'
-import { TodayCard } from '../nutrition/components'
+import { TodayCard, WaterCard } from '../nutrition/components'
 import { dailyProtein } from '../../lib/nutrition'
 
 export function TodayPage() {
@@ -48,7 +49,13 @@ export function TodayPage() {
           icon={Bandage}
           title="What are you recovering from?"
           body="Add an injury or condition to start tracking pain, symptoms and progress. Everything stays on this iPhone."
-          action={<MLink to="/injuries/new" className="btn btn-primary"><Plus size={20} /> Add Injury</MLink>}
+          action={
+            <div className="flex flex-col items-center gap-2">
+              <MLink to="/injuries/new" className="btn btn-primary"><Plus size={20} /> Add Injury</MLink>
+              {/* After Sign Out (or on a new iPhone), the way back to an encrypted Drive backup */}
+              {GOOGLE_CLIENT_ID && <MLink to="/settings/drive" className="btn btn-quiet"><CloudDownload size={19} /> Restore from Google Drive</MLink>}
+            </div>
+          }
         />
       ) : (
         <PainCard injuryIds={open.map((i) => i.id)} names={new Map(open.map((i) => [i.id, i.name]))} />
@@ -58,7 +65,7 @@ export function TodayPage() {
 
       <RehabToday hasInjuries={injuries.length > 0} />
 
-      {injuries.length > 0 && <NutritionToday target={profile?.proteinTarget} />}
+      {injuries.length > 0 && <NutritionToday target={profile?.proteinTarget} waterTarget={profile?.waterTarget} />}
 
       <LatestMeasurements />
 
@@ -191,11 +198,12 @@ function Nudges({ hasData }: { hasData: boolean }) {
   const dismissedInstall = useMeta<boolean>('dismissedInstall')
   const lastBackupAt = useMeta<number>('lastBackupAt')
   const firstEntryAt = useLiveQuery(async () => (await db.symptoms.orderBy('recordedAt').first())?.recordedAt, [])
+  const toReview = useLiveQuery(async () => (await db.documents.toArray()).filter((d) => !d.deletedAt && d.aiSummary?.facts?.length && !d.aiSummary.reviewedAt).length, [])
 
   const showInstall = isIOS() && !isStandalone() && dismissedInstall !== true
   const backupDue = hasData && firstEntryAt !== undefined && (lastBackupAt ?? firstEntryAt) < daysAgo(7)
 
-  if (!showInstall && !backupDue) return null
+  if (!showInstall && !backupDue && !toReview) return null
   return (
     <Section className="space-y-3">
       {showInstall && (
@@ -205,6 +213,15 @@ function Nudges({ hasData }: { hasData: boolean }) {
           title="Add Reclaim to your Home Screen"
           body="Tap Share, then “Add to Home Screen”. It opens full screen, works offline, and Safari won't clear your data."
           onDismiss={() => setMeta('dismissedInstall', true)}
+        />
+      )}
+      {!!toReview && (
+        <Tip
+          icon={HeartPulse}
+          color="pink"
+          title={`${toReview} ${toReview === 1 ? 'record is' : 'records are'} ready to review`}
+          body="Check the lab results, medicines and findings the AI read before they join your Health Profile."
+          to="/health"
         />
       )}
       {backupDue && (
@@ -260,15 +277,19 @@ function InsightsToday() {
 }
 
 /** Protein so far today; opens Nutrition. */
-function NutritionToday({ target }: { target?: number }) {
+function NutritionToday({ target, waterTarget }: { target?: number; waterTarget?: number }) {
   const meals = useMeals(startOfDay(Date.now()))
-  if (!meals) return null
+  const water = useWater(startOfDay(Date.now()))
+  if (!meals || !water) return null
   const [today] = dailyProtein(meals, 1)
   return (
     <Section prominent title="Nutrition" action={<MLink to="/log/meal" className="text-accent">Log Meal</MLink>}>
-      <MLink to="/nutrition" className="block active:opacity-70">
-        <TodayCard protein={today.protein} calories={today.calories} meals={today.meals} target={target} compact />
-      </MLink>
+      <div className="space-y-3">
+        <MLink to="/nutrition" className="block active:opacity-70">
+          <TodayCard protein={today.protein} calories={today.calories} meals={today.meals} target={target} compact />
+        </MLink>
+        <WaterCard total={water.reduce((a, d) => a + d.amount, 0)} target={waterTarget} compact />
+      </div>
     </Section>
   )
 }

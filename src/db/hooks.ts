@@ -124,3 +124,13 @@ export function useMeals(from = 0) {
 export function useSavedMeals() {
   return useLiveQuery(async () => (await db.savedMeals.toArray()).filter(alive).sort((a, b) => b.updatedAt - a.updatedAt), [])
 }
+
+/** Confirmed health facts, newest record first. */
+export function useFacts() {
+  return useLiveQuery(async () => (await db.facts.toArray()).filter(alive).sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name)), [])
+}
+
+/** Water logged since `from`. */
+export function useWater(from = 0) {
+  return useLiveQuery(async () => (await db.water.where('recordedAt').aboveOrEqual(from).toArray()).filter(alive), [from])
+}
