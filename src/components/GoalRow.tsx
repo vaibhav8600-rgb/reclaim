@@ -3,7 +3,7 @@ import { db, type Profile } from '../db/db'
 import { save } from '../db/repo'
 import { toast } from '../lib/toast'
 
-export type GoalField = 'proteinTarget' | 'waterTarget' | 'stepsTarget' | 'sleepTarget' | 'weightGoal' | 'height'
+export type GoalField = 'calorieTarget' | 'proteinTarget' | 'fiberTarget' | 'waterTarget' | 'stepsTarget' | 'sleepTarget' | 'weightGoal' | 'height' | 'birthYear'
 
 /** One editable number on the profile (a goal, or the height): saved when you leave the field, with Undo. */
 export function GoalRow({ field, label, unit, value, decimals = false, placeholder = 'None', icon }: {
@@ -26,7 +26,7 @@ export function GoalRow({ field, label, unit, value, decimals = false, placehold
     if (next === value) return
     const me = await db.profile.get('me')
     await save(db.profile, { id: 'me', name: me?.name ?? '', [field]: next } as Partial<Profile> & { name: string })
-    toast(next !== undefined ? `${label}: ${next.toLocaleString()}${unit ? ` ${unit}` : ''}` : `${label} removed`, {
+    toast(next !== undefined ? `${label}: ${field === 'birthYear' ? next : next.toLocaleString()}${unit ? ` ${unit}` : ''}` : `${label} removed`, {
       label: 'Undo',
       onClick: () => save(db.profile, { id: 'me', name: me?.name ?? '', [field]: value } as Partial<Profile> & { name: string }),
     })

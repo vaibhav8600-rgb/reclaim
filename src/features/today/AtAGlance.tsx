@@ -1,4 +1,4 @@
-import { ChevronRight, Droplet, Footprints, Moon, Plus, Scale, Utensils } from 'lucide-react'
+import { ChevronRight, Droplet, Flame, Footprints, Moon, Plus, Scale, Utensils } from 'lucide-react'
 import type { Profile } from '../../db/db'
 import { useActivity, useLatestWeight, useMeals, useSleep, useWater } from '../../db/hooks'
 import { MLink } from '../../components/MLink'
@@ -36,6 +36,7 @@ export function AtAGlance({ profile }: { profile?: Profile | null }) {
   if (!meals || !water || !activity || !sleeps || weight === undefined) return null
 
   const protein = Math.round(meals.reduce((a, m) => a + m.protein, 0))
+  const kcal = Math.round(meals.reduce((a, m) => a + (m.calories ?? 0), 0))
   const ml = water.reduce((a, d) => a + d.amount, 0)
   const steps = activity[0]?.steps ?? 0
   const night = lastNight(sleeps)
@@ -43,6 +44,7 @@ export function AtAGlance({ profile }: { profile?: Profile | null }) {
   const litres = (n: number) => (n < 1000 ? `${n} ml` : `${Math.round(n / 100) / 10} L`)
 
   const tiles: Tile[] = [
+    { key: 'calories', label: 'Calories', icon: Flame, color: 'var(--color-tile-orange)', value: kcal, target: profile?.calorieTarget, shown: kcal.toLocaleString(), of: profile?.calorieTarget ? `of ${profile.calorieTarget.toLocaleString()}` : 'kcal', to: '/nutrition', spoken: `Calories ${kcal}${profile?.calorieTarget ? ` of ${profile.calorieTarget}` : ''}` },
     { key: 'protein', label: 'Protein', icon: Utensils, color: 'var(--color-tile-purple)', value: protein, target: profile?.proteinTarget, shown: `${protein} g`, of: profile?.proteinTarget ? `of ${profile.proteinTarget} g` : undefined, to: '/nutrition', spoken: `Protein ${protein} grams${profile?.proteinTarget ? ` of ${profile.proteinTarget}` : ''}` },
     { key: 'water', label: 'Water', icon: Droplet, color: 'var(--color-tile-blue)', value: ml, target: profile?.waterTarget, shown: litres(ml), of: profile?.waterTarget ? `of ${litres(profile.waterTarget)}` : undefined, to: '/nutrition', spoken: `Water ${ml} millilitres${profile?.waterTarget ? ` of ${profile.waterTarget}` : ''}` },
     { key: 'steps', label: 'Steps', icon: Footprints, color: 'var(--color-tile-green)', value: steps, target: profile?.stepsTarget, shown: steps.toLocaleString(), of: profile?.stepsTarget ? `of ${profile.stepsTarget.toLocaleString()}` : undefined, to: '/log/steps', spoken: `Steps ${steps}${profile?.stepsTarget ? ` of ${profile.stepsTarget}` : ''}` },
@@ -55,14 +57,14 @@ export function AtAGlance({ profile }: { profile?: Profile | null }) {
   return (
     <Section prominent title="At a Glance" action={<MLink to="/goals" className="text-accent">Goals</MLink>}>
       <div className="card p-3">
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-5 gap-0.5">
           {tiles.map((t) => (
             <MLink key={t.key} to={t.to} className="flex flex-col items-center rounded-2xl px-0.5 py-2 text-center active:bg-fill" aria-label={t.spoken}>
-              <ProgressRing value={t.value} max={t.target ?? 0} size={54} stroke={6} color={t.color}>
-                <t.icon size={19} style={{ color: t.color }} />
+              <ProgressRing value={t.value} max={t.target ?? 0} size={48} stroke={5.5} color={t.color}>
+                <t.icon size={17} style={{ color: t.color }} />
               </ProgressRing>
-              <span className="font-rounded mt-1.5 text-[0.9375rem] leading-tight font-semibold tabular-nums" data-testid={`glance-${t.key}`}>{t.shown}</span>
-              <span className="text-[0.75rem] leading-tight text-muted">{t.of ?? t.label}</span>
+              <span className="font-rounded mt-1.5 text-[0.875rem] leading-tight font-semibold tabular-nums" data-testid={`glance-${t.key}`}>{t.shown}</span>
+              <span className="text-[0.6875rem] leading-tight text-muted">{t.of ?? t.label}</span>
             </MLink>
           ))}
         </div>

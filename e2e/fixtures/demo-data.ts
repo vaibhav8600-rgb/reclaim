@@ -85,7 +85,7 @@ export function generateDemoData({ now = Date.now(), seed = 7 }: { now?: number;
   const stamp = (t: number) => ({ createdAt: t, updatedAt: t })
   const past = (t: number) => t <= now - 60_000
 
-  const profile: Profile[] = [{ id: 'me', name: 'Alex', proteinTarget: 130, waterTarget: 2500, height: 178, weightGoal: 80, stepsTarget: 8000, sleepTarget: 7.5, ...stamp(at(75, 9)) }]
+  const profile: Profile[] = [{ id: 'me', name: 'Alex', proteinTarget: 130, waterTarget: 2500, height: 178, weightGoal: 80, stepsTarget: 8000, sleepTarget: 7.5, calorieTarget: 2200, fiberTarget: 30, sex: 'male', birthYear: 1994, activity: 'light', weightPlan: 'lose', diet: 'non-vegetarian', ...stamp(at(75, 9)) }]
 
   const injuries: Injury[] = [
     {

@@ -9,12 +9,13 @@ const proteinToday = (page: Page) => page.getByTestId('protein-today')
 
 test('protein first: a goal, a meal by grams, a saved meal logged in one tap (with undo)', async ({ page }) => {
   await importBackup(page, injuriesBackup('Tennis elbow'))
-  await page.goto('/nutrition')
-  const goal = page.getByLabel('Daily protein goal (g)')
+  await page.goto('/goals')
+  const goal = page.getByLabel('Protein (g)')
   await goal.fill('120')
   await goal.press('Enter')
-  await expect(page.getByText('Daily protein goal: 120 g')).toBeVisible()
+  await expect(page.getByText('Protein: 120 g')).toBeVisible()
 
+  await page.goto('/nutrition')
   await page.getByRole('link', { name: 'Log meal' }).click()
   await expect(page.getByRole('heading', { name: 'Meal', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
@@ -26,8 +27,8 @@ test('protein first: a goal, a meal by grams, a saved meal logged in one tap (wi
 
   await expect(page).toHaveURL(/\/nutrition$/)
   await expect(proteinToday(page)).toHaveText('32')
-  await expect(page.getByText('of 120 g protein')).toBeVisible()
-  await expect(page.getByText(/1 meal · 280 kcal · 88 g to go/)).toBeVisible()
+  await expect(page.getByTestId('calories-today')).toHaveText('280')
+  await expect(page.getByTestId('calories-left')).toHaveText('1 meal')
 
   // One tap logs a saved meal; Undo takes it back.
   await page.getByRole('button', { name: 'Log Protein shake' }).click()
@@ -55,11 +56,11 @@ test('foods add up to the meal total; edit, delete and undo', async ({ page }) =
   await page.goto('/log/meal')
   await page.getByLabel('Meal', { exact: true }).fill('Lunch plate')
   await page.getByLabel('Protein (g)').fill('30')
-  await page.getByRole('button', { name: 'Add Foods' }).click()
+  await page.getByRole('button', { name: 'Add by Hand' }).click()
   // The total typed so far carries over to the first food.
   await expect(page.getByLabel('Protein grams')).toHaveValue('30')
   await page.getByLabel('Food name').fill('Chicken')
-  await page.getByRole('button', { name: 'Add Food', exact: true }).click()
+  await page.getByRole('button', { name: 'Add by Hand', exact: true }).click()
   await page.getByLabel('Food name').nth(1).fill('Rice')
   await page.getByLabel('Protein grams').nth(1).fill('4,5')
   await page.getByLabel('kcal', { exact: true }).nth(1).fill('200')
@@ -93,10 +94,10 @@ test('photo estimate: AI drafts the foods, the person checks them, nothing saved
   await importBackup(page, injuriesBackup('Tennis elbow'))
   await page.goto('/log/meal')
 
-  await expect(page.getByRole('button', { name: 'Estimate Protein' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Estimate with AI' })).toBeDisabled()
   await page.locator('input[type=file]').setInputFiles({ name: 'meal.png', mimeType: 'image/png', buffer: PNG })
   await expect(page.getByRole('img', { name: 'Meal photo' })).toBeVisible()
-  await page.getByRole('button', { name: 'Estimate Protein' }).click()
+  await page.getByRole('button', { name: 'Estimate with AI' }).click()
   await page.getByRole('dialog', { name: 'Use AI in Reclaim?' }).getByRole('button', { name: 'Turn On AI' }).click()
 
   const answer = ANSWERS['estimate-meal']
@@ -136,7 +137,7 @@ test('a description works too; a photo that isn’t food says so', async ({ brow
   await importBackup(page, injuriesBackup('Tennis elbow'))
   await page.goto('/log/meal')
   await page.getByLabel('Meal', { exact: true }).fill('150 g grilled chicken, a cup of rice and broccoli')
-  await page.getByRole('button', { name: 'Estimate Protein' }).click()
+  await page.getByRole('button', { name: 'Estimate with AI' }).click()
   await page.getByRole('dialog', { name: 'Use AI in Reclaim?' }).getByRole('button', { name: 'Turn On AI' }).click()
   await expect(page.getByTestId('meal-total')).toHaveText('Total: 53 g protein · 490 kcal')
   expect(requests[0].input).toEqual({ description: '150 g grilled chicken, a cup of rice and broccoli' })
@@ -146,7 +147,7 @@ test('a description works too; a photo that isn’t food says so', async ({ brow
     route.request().method() === 'POST' ? route.fulfill({ json: { result: { isFood: false, name: '', items: [], assumptions: [] }, model: 'gemini-test' } }) : route.fallback(),
   )
   await page.locator('input[type=file]').setInputFiles({ name: 'cat.png', mimeType: 'image/png', buffer: PNG })
-  await page.getByRole('button', { name: 'Estimate Protein' }).click()
+  await page.getByRole('button', { name: 'Estimate with AI' }).click()
   await expect(page.getByRole('alert')).toHaveText(/doesn’t look like food/)
   await expect(page.getByTestId('meal-total')).toHaveText('Total: 53 g protein · 490 kcal') // earlier foods untouched
 })
@@ -164,7 +165,7 @@ test('demo data: the 7-day protein chart and Today match the log', async ({ page
   await page.goto('/nutrition')
   await expect(page.getByTestId('protein-day')).toHaveText(expected)
   await expect(proteinToday(page)).toHaveText(expected[6] === '—' ? '0' : expected[6])
-  await expect(page.getByText('of 130 g protein')).toBeVisible()
+  await expect(page.getByText('of 2,200 kcal')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Log Oats with milk and whey' })).toBeVisible()
 
   // Saved-meal chips prefill the form.

@@ -4,7 +4,7 @@ import { kindInfo, sideLabel, symptomLabel } from './constants'
 import { dayKey, daysAgo, daysBetween, fromDayKey } from './dates'
 import { factKey, factValue } from './facts'
 import { qualityLabel, sleepHours } from './daily'
-import { dailyProtein } from './nutrition'
+import { dailyTotals } from './nutrition'
 import { candidates } from './plan'
 import { itemDone, startOfWeek, weeklyAdherence } from './rehab'
 
@@ -171,10 +171,12 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
     nutrition: liveMeals.length
       ? {
           dailyProteinGoalGrams: profile?.proteinTarget,
+          dailyCalorieGoal: profile?.calorieTarget,
+          dailyFiberGoalGrams: profile?.fiberTarget,
           // Only days with at least one meal logged: a missing day means not logged, not nothing eaten.
-          loggedDays: dailyProtein(liveMeals, days, now)
+          loggedDays: dailyTotals(liveMeals, days, now)
             .filter((d) => d.meals)
-            .map((d) => ({ date: d.key, proteinGrams: d.protein, kcal: d.calories || undefined, meals: d.meals })),
+            .map((d) => ({ date: d.key, proteinGrams: d.protein, kcal: d.calories || undefined, carbsGrams: d.carbs || undefined, fatGrams: d.fat || undefined, fiberGrams: d.fiber || undefined, meals: d.meals })),
         }
       : undefined,
   }

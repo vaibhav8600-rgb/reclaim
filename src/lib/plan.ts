@@ -1,5 +1,6 @@
 import type { Exercise, HealthFact, Injury, Prescription, RehabSession } from '../db/db'
 import { clampTo, EXERCISE_GUIDES, type ExerciseGuide } from './guide'
+import { suggestedCalories } from './nutrition'
 import { itemDone, plannedPerWeek } from './rehab'
 
 /**
@@ -87,7 +88,7 @@ export function weeklyCheck(p: Prescription, sessions: RehabSession[], now = Dat
  * recovery plan when records show kidney or heart problems), 8,000 steps, 8 hours of sleep. Only ever fills goals
  * that aren't set yet.
  */
-export function suggestedGoals(weightKg: number | undefined, facts: HealthFact[]) {
+export function suggestedGoals(weightKg: number | undefined, facts: HealthFact[], profile: Parameters<typeof suggestedCalories>[0] = {}) {
   const t = dailyTargets(weightKg, facts)
-  return { proteinTarget: t.protein?.target, waterTarget: t.water?.target, stepsTarget: 8000, sleepTarget: 8 }
+  return { calorieTarget: suggestedCalories(profile, weightKg), proteinTarget: t.protein?.target, fiberTarget: 30, waterTarget: t.water?.target, stepsTarget: 8000, sleepTarget: 8 }
 }

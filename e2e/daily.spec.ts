@@ -20,7 +20,7 @@ test('sleep, BMI and starting goals are worked out correctly', () => {
   expect(bmi(80, 178)).toBe(25.2)
   expect(bmiRange(25.2)).toBe('25–29.9 (overweight range)')
   expect(bmiRange(22)).toBe('18.5–24.9 (healthy range)')
-  expect(suggestedGoals(80, [])).toEqual({ proteinTarget: 130, waterTarget: 2750, stepsTarget: 8000, sleepTarget: 8 })
+  expect(suggestedGoals(80, [])).toEqual({ calorieTarget: undefined, proteinTarget: 130, fiberTarget: 30, waterTarget: 2750, stepsTarget: 8000, sleepTarget: 8 })
   expect(suggestedGoals(undefined, [])).toMatchObject({ proteinTarget: undefined, stepsTarget: 8000 })
 })
 
@@ -83,7 +83,7 @@ test('goals in one place, and weight with a trend, a goal and BMI', async ({ pag
 
   await page.goto('/goals')
   await page.getByRole('button', { name: 'Suggest Goals for Me' }).click()
-  await expect(page.getByText('Filled in 4 goals')).toBeVisible()
+  await expect(page.getByText('Filled in 5 goals')).toBeVisible()
   await expect(page.getByLabel('Protein (g)')).toHaveValue('135')
   await page.getByLabel('Goal Weight (kg)').fill('80')
   await page.getByLabel('Goal Weight (kg)').press('Enter')

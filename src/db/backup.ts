@@ -16,7 +16,16 @@ const base = {
   deletedAt: z.number().optional(),
 }
 const source = z.enum(['user', 'user_confirmed', 'ai_estimate', 'clinician', 'device', 'imported'])
-const foodItem = z.object({ name: z.string(), amount: z.string().optional(), protein: z.number().min(0), calories: z.number().min(0).optional() })
+const nutrients = {
+  protein: z.number().min(0),
+  calories: z.number().min(0).optional(),
+  carbs: z.number().min(0).optional(),
+  fat: z.number().min(0).optional(),
+  fiber: z.number().min(0).optional(),
+  sugar: z.number().min(0).optional(),
+  sodium: z.number().min(0).optional(),
+}
+const foodItem = z.object({ name: z.string(), amount: z.string().optional(), foodId: z.string().optional(), ...nutrients })
 const side = z.enum(['left', 'right', 'both', 'none'])
 
 const schemas = {
@@ -25,6 +34,13 @@ const schemas = {
     weightGoal: z.number().min(20).max(400).optional(),
     stepsTarget: z.number().min(0).max(100_000).optional(),
     sleepTarget: z.number().min(0).max(16).optional(),
+    calorieTarget: z.number().min(0).max(10_000).optional(),
+    fiberTarget: z.number().min(0).max(200).optional(),
+    sex: z.enum(['male', 'female']).optional(),
+    birthYear: z.number().int().min(1900).max(2100).optional(),
+    activity: z.enum(['sedentary', 'light', 'moderate', 'active']).optional(),
+    weightPlan: z.enum(['lose', 'maintain', 'gain']).optional(),
+    diet: z.enum(['vegetarian', 'eggetarian', 'non-vegetarian', 'vegan']).optional(),
   }),
   injuries: z.object({
     ...base,
@@ -129,14 +145,14 @@ const schemas = {
     ...base,
     name: z.string(),
     slot: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
-    protein: z.number().min(0),
-    calories: z.number().min(0).optional(),
+    ...nutrients,
     items: z.array(foodItem),
     recordedAt: z.number(),
     notes: z.string().optional(),
     source,
   }),
-  savedMeals: z.object({ ...base, name: z.string(), protein: z.number().min(0), calories: z.number().min(0).optional(), items: z.array(foodItem) }),
+  savedMeals: z.object({ ...base, name: z.string(), ...nutrients, items: z.array(foodItem), servings: z.number().min(1).max(100).optional() }),
+  foods: z.object({ ...base, name: z.string(), serving: z.string(), grams: z.number().min(0).optional(), ...nutrients }),
   facts: z.object({
     ...base,
     kind: z.enum(FACT_KINDS),

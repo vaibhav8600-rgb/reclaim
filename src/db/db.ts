@@ -31,6 +31,17 @@ export interface Profile extends Base {
   stepsTarget?: number
   /** Hours of sleep a night. */
   sleepTarget?: number
+  /** Daily calories (kcal). */
+  calorieTarget?: number
+  /** Daily fiber (g). */
+  fiberTarget?: number
+  /** For a suggested calorie goal (Mifflin–St Jeor): sex, year of birth, activity, and the weight plan. */
+  sex?: 'male' | 'female'
+  birthYear?: number
+  activity?: 'sedentary' | 'light' | 'moderate' | 'active'
+  weightPlan?: 'lose' | 'maintain' | 'gain'
+  /** For meal ideas. */
+  diet?: 'vegetarian' | 'eggetarian' | 'non-vegetarian' | 'vegan'
 }
 
 export interface Injury extends Base {
@@ -231,26 +242,49 @@ export interface StoredFile {
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
-/** One food in a meal. Protein and energy are for the portion eaten. */
-export interface FoodItem {
-  name: string
-  /** e.g. "2 eggs", "150 g". */
-  amount?: string
-  /** grams */
+/** Nutrients for a portion. Protein is always known; the rest when the source gives them. */
+export interface Nutrients {
+  /** g */
   protein: number
   /** kcal */
   calories?: number
+  /** g */
+  carbs?: number
+  /** g */
+  fat?: number
+  /** g */
+  fiber?: number
+  /** g */
+  sugar?: number
+  /** mg */
+  sodium?: number
+}
+
+/** One food in a meal, for the portion eaten. */
+export interface FoodItem extends Nutrients {
+  name: string
+  /** e.g. "2 eggs", "150 g". */
+  amount?: string
+  /** A food from the built-in list (`db:<id>`) or My Foods (the record id). Lets "Recent" find it again. */
+  foodId?: string
+}
+
+/** A food the user created (from a label, a recipe card…): nutrients for one serving. */
+export interface CustomFood extends Base, Nutrients {
+  name: string
+  /** What one serving is, e.g. "1 bar", "1 cup". */
+  serving: string
+  /** Grams in one serving, if known. */
+  grams?: number
 }
 
 /**
  * A meal as eaten. `protein`/`calories` are the totals (the sum of `items` when foods are listed).
  * An AI photo/description estimate is only saved after review, as `user_confirmed`.
  */
-export interface Meal extends Base {
+export interface Meal extends Base, Nutrients {
   name: string
   slot: MealSlot
-  protein: number
-  calories?: number
   items: FoodItem[]
   recordedAt: number
   notes?: string
@@ -258,11 +292,11 @@ export interface Meal extends Base {
 }
 
 /** A meal eaten often, logged again with one tap. */
-export interface SavedMeal extends Base {
+export interface SavedMeal extends Base, Nutrients {
   name: string
-  protein: number
-  calories?: number
   items: FoodItem[]
+  /** A recipe that makes several servings: its foods are for the whole batch, and one serving is logged by default. */
+  servings?: number
 }
 
 export interface Meta {
@@ -287,6 +321,7 @@ export const db = new Dexie('reclaim') as Dexie & {
   water: Table<Drink, string>
   sleep: Table<Sleep, string>
   activity: Table<Activity, string>
+  foods: Table<CustomFood, string>
   meta: Table<Meta, string>
 }
 
@@ -327,10 +362,14 @@ db.version(6).stores({
   activity: 'id, date, updatedAt',
 })
 
+db.version(7).stores({
+  foods: 'id, name, updatedAt',
+})
+
 db.on('populate', (tx) => {
   tx.table('exercises').bulkAdd(STARTER_EXERCISES)
 })
 
 /** Tables included in backups and future sync. */
-export const DATA_TABLES = ['profile', 'injuries', 'symptoms', 'measurements', 'journal', 'exercises', 'prescriptions', 'sessions', 'documents', 'meals', 'savedMeals', 'facts', 'water', 'sleep', 'activity'] as const
+export const DATA_TABLES = ['profile', 'injuries', 'symptoms', 'measurements', 'journal', 'exercises', 'prescriptions', 'sessions', 'documents', 'meals', 'savedMeals', 'facts', 'water', 'sleep', 'activity', 'foods'] as const
 export type DataTable = (typeof DATA_TABLES)[number]

@@ -157,7 +157,7 @@ evidence: the exact printed words the fact came from (the row or phrase, up to a
       const i = input as AiInput<'estimate-meal'>
       return {
         text: `Estimate what's in this meal so the person can track their protein. ${i.image ? 'Use the attached photo' : 'Use their description'}${i.image && i.description ? ', and their description' : ''}.
-List each food with the portion you assume ("2 eggs", "about 150 g cooked rice"), and its protein (g, whole number) and energy (kcal, nearest 10) for that portion, from typical values.
+List each food with the portion you assume ("2 eggs", "about 150 g cooked rice"), and for that portion, from typical values: protein, carbs, fat and fiber (g, whole numbers) and energy (kcal, nearest 10).
 If the description gives quantities, use them. Don't invent foods you can't see or that weren't mentioned; sauces and oil only if visible or stated.
 Name: a short name for the meal, e.g. "Chicken rice bowl".
 Assumptions: the main guesses behind the numbers (portion size, cooking method), briefly.
@@ -175,8 +175,11 @@ Their description: ${data(i.description)}` : ''}`,
                   amount: str('The portion assumed.'),
                   protein: { type: 'number', minimum: 0, maximum: 300 },
                   calories: { type: 'number', minimum: 0, maximum: 5000 },
+                  carbs: { type: 'number', minimum: 0, maximum: 1000 },
+                  fat: { type: 'number', minimum: 0, maximum: 500 },
+                  fiber: { type: 'number', minimum: 0, maximum: 200 },
                 },
-                ['name', 'amount', 'protein', 'calories'],
+                ['name', 'amount', 'protein', 'calories', 'carbs', 'fat', 'fiber'],
               ),
               12,
             ),
@@ -251,6 +254,24 @@ Their log and records: ${data(i.context)}`,
             questions: arr(str(), 4),
           },
           ['summary', 'focus', 'exercises', 'cautions', 'questions'],
+        ),
+      }
+    }
+    case 'meal-ideas': {
+      const i = input as AiInput<'meal-ideas'>
+      return {
+        text: `Suggest 3 simple, everyday meal or snack ideas for this person's next meal ("slot") that fit what's left of today's goals ("remaining"). Food ideas are fine for this task; this is not medical advice.
+Prefer foods like the ones they usually eat ("usualFoods") and respect their diet ("diet": vegetarian means no meat, fish or egg; eggetarian adds eggs; vegan has no dairy either). Home-style portions, easy to make or buy.
+For each: name, portion (what and how much, e.g. "2 besan chilla + 1 katori curd"), approximate calories and protein for that portion, and why it fits (one short sentence, with numbers).
+If "conditions" lists something diet-related (e.g. diabetes, kidney disease, high cholesterol), keep the ideas ordinary and put in note that their clinician's or dietitian's advice comes first. Otherwise note can be empty.
+If nothing is left of the calorie goal, suggest light, high-protein or high-fiber options and say so.
+Their day: ${data(i.context)}`,
+        schema: obj(
+          {
+            ideas: arr(obj({ name: str(), portion: str(), calories: { type: 'number' }, protein: { type: 'number' }, why: str() }, ['name', 'portion', 'calories', 'protein', 'why']), 3),
+            note: str(),
+          },
+          ['ideas', 'note'],
         ),
       }
     }

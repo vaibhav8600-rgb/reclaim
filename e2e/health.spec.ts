@@ -59,6 +59,7 @@ test('the record-reading answer survives small model slips, and Gemini gets a sc
     'report-narrative': { context: {} },
     'health-summary': { context: {} },
     'recovery-plan': { context: {} },
+    'meal-ideas': { context: {} },
   }
   for (const task of AI_TASKS) expect(Math.max(0, ...maxItems(buildPrompt(task, samples[task] as never).schema)), task).toBeLessThanOrEqual(20)
 })
@@ -234,10 +235,11 @@ test('water: one-tap glasses on Today, undo, and a goal', async ({ page }) => {
   await page.getByRole('button', { name: 'Undo' }).click()
   await expect(water).toHaveText('250 ml')
 
+  await page.goto('/goals')
+  await page.getByLabel('Water (ml)').fill('2500')
+  await page.getByLabel('Water (ml)').press('Enter')
+  await expect(page.getByText('Water: 2,500 ml')).toBeVisible()
   await page.goto('/nutrition')
-  await page.getByLabel('Daily water goal (ml)').fill('2500')
-  await page.getByLabel('Daily water goal (ml)').press('Enter')
-  await expect(page.getByText('Daily water goal: 2,500 ml')).toBeVisible()
   await expect(page.getByText('of 2,500 ml')).toBeVisible()
 
   const db = await dumpDb(page)

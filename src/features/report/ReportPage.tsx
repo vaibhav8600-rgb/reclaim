@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { dailyProtein } from '../../lib/nutrition'
+import { dailyTotals } from '../../lib/nutrition'
 import { Printer, Sparkles } from 'lucide-react'
 import type { AiOutput } from '../../../shared/ai'
 import { db } from '../../db/db'
@@ -105,7 +105,7 @@ export function ReportPage() {
   const series = [...data.measurements.reduce((m, x) => m.set(`${x.kind}|${x.side ?? ''}|${x.method ?? ''}|${x.unit}`, [...(m.get(`${x.kind}|${x.side ?? ''}|${x.method ?? ''}|${x.unit}`) ?? []), x]), new Map<string, typeof data.measurements>())]
 
   // Nutrition: protein on the days anything was logged (a day without logs isn't a day without food)
-  const mealDays = dailyProtein(data.meals, days).filter((d) => d.meals)
+  const mealDays = dailyTotals(data.meals, days).filter((d) => d.meals)
   const proteinAvg = mealDays.length ? Math.round(mealDays.reduce((a, d) => a + d.protein, 0) / mealDays.length) : undefined
   const goal = profile?.proteinTarget
 

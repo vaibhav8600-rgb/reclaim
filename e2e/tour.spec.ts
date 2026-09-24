@@ -18,6 +18,8 @@ const screens: [name: string, path: string, heading: string, fullPage?: false][]
   ['symptom-form', '/log/symptom', 'Log Symptom'],
   ['nutrition', '/nutrition', 'Nutrition'],
   ['goals', '/goals', 'Goals'],
+  ['my-food', '/nutrition/foods/new', 'New Food'],
+  ['apple-health', '/settings/health', 'Apple Health'],
   ['weight', '/weight', 'Weight'],
   ['sleep-form', '/log/sleep', 'Sleep'],
   ['steps-form', '/log/steps', 'Steps & Activity'],
@@ -46,6 +48,18 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.screenshot({ path, fullPage })
       await info.attach(`${scheme}-${name}`, { path, contentType: 'image/png' })
     }
+    // The food picker: search, then a portion
+    await page.goto('/log/meal')
+    await page.getByRole('button', { name: 'Search Foods' }).click()
+    await page.getByLabel('Search foods').fill('dal')
+    await page.waitForTimeout(250)
+    await page.screenshot({ path: info.outputPath(`${scheme}-food-search.png`) })
+    await info.attach(`${scheme}-food-search`, { path: info.outputPath(`${scheme}-food-search.png`), contentType: 'image/png' })
+    await page.getByRole('button', { name: /^Dal, toor/ }).click()
+    await page.waitForTimeout(250)
+    await page.screenshot({ path: info.outputPath(`${scheme}-food-portion.png`) })
+    await info.attach(`${scheme}-food-portion`, { path: info.outputPath(`${scheme}-food-portion.png`), contentType: 'image/png' })
+
     await page.goto('/')
     await page.getByRole('button', { name: 'Quick log' }).click()
     await expect(page.getByRole('dialog', { name: 'Quick log' })).toBeVisible()
