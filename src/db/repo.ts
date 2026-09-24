@@ -20,6 +20,8 @@ export function onLocalChange(fn: () => void) {
   return () => void listeners.delete(fn)
 }
 const changed = () => listeners.forEach((fn) => fn())
+/** For bulk writes that bypass save() (restoring a backup file): schedule a sync like any edit. */
+export const notifyLocalChange = changed
 
 type Input<T extends Base> = Omit<T, keyof Base> & { id?: string }
 

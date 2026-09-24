@@ -1,4 +1,4 @@
-import { Dumbbell, Library, Plus } from 'lucide-react'
+import { ClipboardList, Dumbbell, Library, Plus } from 'lucide-react'
 import { useExerciseMap, useInjuryMap, usePrescriptions, useSessions } from '../../db/hooks'
 import { ENTRY_INSET, EntryRow } from '../../components/EntryRow'
 import { MLink } from '../../components/MLink'
@@ -26,12 +26,23 @@ export function RehabPage() {
           icon={Dumbbell}
           title="Add your physio exercises"
           body="Build your plan from the exercise library or add your own — sets, reps and how often, as your physio prescribed."
-          action={<MLink to="/rehab/library" className="btn btn-primary"><Library size={19} /> Browse Exercises</MLink>}
+          action={
+            <div className="flex flex-col items-center gap-2">
+              <MLink to="/rehab/library" className="btn btn-primary"><Library size={19} /> Browse Exercises</MLink>
+              <MLink to="/plan" className="btn btn-quiet"><ClipboardList size={19} /> Draft a Recovery Plan</MLink>
+            </div>
+          }
         />
       ) : (
         <>
           <Section>
             <WeekCard />
+          </Section>
+
+          <Section>
+            <Group inset="3.625rem">
+              <Row icon={<IconTile icon={ClipboardList} color="green" />} title="Recovery Plan" subtitle="Suggestions from your logs, and this week’s check" to="/plan" />
+            </Group>
           </Section>
 
           <Section prominent title="Plan" action={<MLink to="/rehab/library" className="text-accent">Library</MLink>}>

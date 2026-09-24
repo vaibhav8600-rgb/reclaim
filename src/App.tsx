@@ -37,6 +37,13 @@ const InsightsPage = page(() => import('./features/insights/InsightsPage'), 'Ins
 const ReportPage = page(() => import('./features/report/ReportPage'), 'ReportPage')
 const NutritionPage = page(() => import('./features/nutrition/NutritionPage'), 'NutritionPage')
 const MealLogPage = page(() => import('./features/nutrition/MealLogPage'), 'MealLogPage')
+const HealthPage = page(() => import('./features/health/HealthPage'), 'HealthPage')
+const LabPage = page(() => import('./features/health/LabPage'), 'LabPage')
+const ReviewPage = page(() => import('./features/health/ReviewPage'), 'ReviewPage')
+const FactFormPage = page(() => import('./features/health/FactFormPage'), 'FactFormPage')
+const ImportPage = page(() => import('./features/health/ImportPage'), 'ImportPage')
+const PlanPage = page(() => import('./features/plan/PlanPage'), 'PlanPage')
+const SummariesPage = page(() => import('./features/health/SummariesPage'), 'SummariesPage')
 
 function Preload() {
   useEffect(() => {
@@ -66,6 +73,10 @@ export function App() {
             <Route path="insights" element={<InsightsPage />} />
             <Route path="report" element={<ReportPage />} />
             <Route path="nutrition" element={<NutritionPage />} />
+            <Route path="health" element={<HealthPage />} />
+            <Route path="plan" element={<PlanPage />} />
+            <Route path="health/lab" element={<LabPage />} />
+            <Route path="health/summaries" element={<SummariesPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<TodayPage />} />
           </Route>
@@ -84,6 +95,11 @@ export function App() {
           <Route path="rehab/exercises/:id/edit" element={<ExerciseFormPage />} />
           <Route path="documents/new" element={<DocumentFormPage />} />
           <Route path="documents/:id/edit" element={<DocumentFormPage />} />
+          <Route path="documents/import" element={<ImportPage />} />
+          <Route path="health/review" element={<ReviewPage />} />
+          <Route path="health/review/:id" element={<ReviewPage />} />
+          <Route path="health/facts/new" element={<FactFormPage />} />
+          <Route path="health/facts/:id" element={<FactFormPage />} />
           <Route path="settings/drive" element={<DriveConnectPage />} />
         </Routes>
       </Suspense>

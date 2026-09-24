@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type ComponentType } from 'react'
 import { MLink } from './MLink'
-import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, UserRound, X } from 'lucide-react'
 import { severityBucket } from '../lib/constants'
 import { useBack } from '../lib/nav'
 
@@ -370,5 +370,15 @@ export function Tip({ icon, color, title, body, to, onDismiss }: { icon: Icon; c
         </button>
       )}
     </div>
+  )
+}
+
+/** The profile picture: the photo, else the name's initial, else a person symbol. */
+export function Avatar({ photo, initial, size }: { photo?: string; initial?: string; size: number }) {
+  if (photo) return <img src={photo} alt="" className="block rounded-full object-cover" style={{ width: size, height: size }} />
+  return (
+    <span className="font-rounded flex items-center justify-center rounded-full bg-gradient-to-b from-[#9aa0a6] to-[#6d7278] font-semibold text-white" style={{ width: size, height: size, fontSize: size * 0.46 }}>
+      {initial ?? <UserRound size={size / 2} />}
+    </span>
   )
 }

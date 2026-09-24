@@ -1,8 +1,10 @@
-import { db } from '../db/db'
+import { db, type HealthFact } from '../db/db'
 import { alive } from '../db/repo'
 import { kindInfo, sideLabel, symptomLabel } from './constants'
 import { dayKey, daysAgo, daysBetween, fromDayKey } from './dates'
+import { factKey, factValue } from './facts'
 import { dailyProtein } from './nutrition'
+import { candidates } from './plan'
 import { itemDone, startOfWeek, weeklyAdherence } from './rehab'
 
 /**
@@ -14,12 +16,35 @@ const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b
 const trim = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s)
 const DAY = 86_400_000
 
+/**
+ * The confirmed medical history, compact: conditions, medicines and allergies, the latest result of each lab test
+ * (out-of-range first) and recent scan findings. Values as the user confirmed them from their records.
+ */
+function healthProfile(facts: HealthFact[]) {
+  if (!facts.length) return undefined
+  const newest = [...facts].sort((a, b) => b.date.localeCompare(a.date))
+  const pick = (kind: HealthFact['kind'], n: number) => newest.filter((f) => f.kind === kind).slice(0, n).map((f) => ({ date: f.date, name: f.name, detail: f.detail && trim(f.detail, 200) }))
+  const latestLab = new Map<string, HealthFact>()
+  for (const f of newest) if (f.kind === 'lab' && !latestLab.has(factKey(f.name))) latestLab.set(factKey(f.name), f)
+  return {
+    conditions: pick('condition', 15),
+    medicines: pick('medication', 15),
+    allergies: pick('allergy', 10),
+    labs: [...latestLab.values()]
+      .sort((a, b) => Number(!!b.flag) - Number(!!a.flag))
+      .slice(0, 40)
+      .map((f) => ({ date: f.date, test: f.name, result: factValue(f), range: f.range, flag: f.flag })),
+    scans: pick('imaging', 8),
+    procedures: pick('procedure', 8),
+  }
+}
+
 export async function buildAiContext({ days = 14, injuryId }: { days?: number; injuryId?: string } = {}) {
   const now = Date.now()
   const from = daysAgo(days - 1, now)
   const half = daysAgo(Math.floor(days / 2) - 1, now)
 
-  const [injuries, symptoms, measurements, notes, sessions, prescriptions, exercises, documents, meals, profile] = await Promise.all([
+  const [injuries, symptoms, measurements, notes, sessions, prescriptions, exercises, documents, meals, profile, facts, water] = await Promise.all([
     db.injuries.toArray(),
     db.symptoms.where('recordedAt').aboveOrEqual(from).toArray(),
     db.measurements.toArray(),
@@ -30,6 +55,8 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
     db.documents.toArray(),
     db.meals.where('recordedAt').aboveOrEqual(from).toArray(), // not injury-specific, but relevant to any recovery
     db.profile.get('me'),
+    db.facts.toArray(),
+    db.water.where('recordedAt').aboveOrEqual(from).toArray(),
   ])
   const inScope = <T extends { injuryId?: string; deletedAt?: number }>(r: T) => alive(r as never) && (!injuryId || r.injuryId === injuryId)
   const injuryName = new Map(injuries.map((i) => [i.id, i.name]))
@@ -69,7 +96,7 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
 
   const series = new Map<string, typeof measurements>()
   for (const m of measurements.filter(inScope).sort((a, b) => a.recordedAt - b.recordedAt)) {
-    const k = `${m.kind === 'other' ? m.method : kindInfo(m.kind).label}${m.side && m.side !== 'none' ? ` (${m.side})` : ''}`
+    const k = `${m.kind === 'other' ? m.method : kindInfo(m.kind).label}${m.side && m.side !== 'none' ? ` (${m.side})` : ''} [${m.unit}]` // one series per unit: cm and in never mix
     series.set(k, [...(series.get(k) ?? []), m])
   }
 
@@ -121,6 +148,13 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 10)
       .map((d) => ({ date: d.date, title: d.title, summary: d.aiSummary ? trim(d.aiSummary.summary, 300) : undefined })),
+    health: healthProfile(facts.filter(alive)),
+    water: water.some(alive)
+      ? {
+          dailyGoalMl: profile?.waterTarget,
+          loggedDays: Object.entries(Object.groupBy(water.filter(alive), (d) => dayKey(d.recordedAt))).map(([date, ds]) => ({ date, ml: ds!.reduce((a, d) => a + d.amount, 0) })),
+        }
+      : undefined,
     nutrition: liveMeals.length
       ? {
           dailyProteinGoalGrams: profile?.proteinTarget,
@@ -130,5 +164,54 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
             .map((d) => ({ date: d.key, proteinGrams: d.protein, kcal: d.calories || undefined, meals: d.meals })),
         }
       : undefined,
+  }
+}
+
+/**
+ * The whole confirmed medical history, for the overall health summary: every lab test with its results in date
+ * order (so changes over time can be described), plus conditions, medicines, scans and the injuries being tracked.
+ */
+export async function buildHealthContext() {
+  const [facts, injuries] = await Promise.all([db.facts.toArray(), db.injuries.toArray()])
+  const live = facts.filter(alive).sort((a, b) => a.date.localeCompare(b.date))
+  const list = (kind: HealthFact['kind']) => live.filter((f) => f.kind === kind).map((f) => ({ date: f.date, name: f.name, detail: f.detail && trim(f.detail, 300) }))
+  const tests = new Map<string, HealthFact[]>()
+  for (const f of live) if (f.kind === 'lab' || f.kind === 'vital') tests.set(factKey(f.name), [...(tests.get(factKey(f.name)) ?? []), f])
+  return {
+    today: dayKey(Date.now()),
+    injuries: injuries.filter(alive).map((i) => ({ name: i.name, status: i.status, diagnosis: i.diagnosis, trackedInReclaimSince: i.startDate })),
+    conditions: list('condition'),
+    medicines: list('medication'),
+    allergies: list('allergy'),
+    procedures: list('procedure'),
+    scans: list('imaging'),
+    tests: [...tests.values()].slice(0, 80).map((rs) => ({
+      test: rs[rs.length - 1].name,
+      range: rs[rs.length - 1].range,
+      results: rs.slice(-8).map((f) => ({ date: f.date, result: factValue(f), flag: f.flag })),
+    })),
+  }
+}
+
+/**
+ * For the recovery plan: the 14-day log and health profile, the open injuries (with ids to assign exercises to),
+ * and the vetted exercises that suit them, with their dose ranges. The AI may choose only from this library.
+ */
+export async function buildPlanContext() {
+  const [base, injuries, exercises] = await Promise.all([buildAiContext({ days: 14 }), db.injuries.toArray(), db.exercises.toArray()])
+  const open = injuries.filter((i) => alive(i) && i.status !== 'resolved')
+  return {
+    ...base,
+    openInjuries: open.map((i) => ({ id: i.id, name: i.name, region: `${sideLabel(i.side) ?? ''} ${i.bodyRegion}`.trim(), status: i.status, diagnosis: i.diagnosis, daysSinceStart: daysBetween(fromDayKey(i.startDate), Date.now()) })),
+    library: candidates(exercises.filter(alive), open).map(({ exercise: e, guide: g }) => ({
+      id: e.id,
+      name: e.name,
+      for: g.for,
+      sets: g.sets,
+      [e.mode === 'time' ? 'secondsPerSet' : 'repsPerSet']: g.target,
+      timesPerDay: g.timesPerDay,
+      daysPerWeek: g.daysPerWeek,
+      note: g.caution,
+    })),
   }
 }

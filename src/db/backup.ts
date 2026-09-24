@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 // No eval-based fast paths: the app runs under a strict Content-Security-Policy (no 'unsafe-eval').
 z.config({ jitless: true })
+import { DOCUMENT_KIND_VALUES, extractedFact, FACT_FLAGS, FACT_KINDS } from '../../shared/ai'
 import { db, DATA_TABLES, type Base, type DataTable } from './db'
 import { setMeta } from './repo'
 import { dayKey } from '../lib/dates'
@@ -19,7 +20,7 @@ const foodItem = z.object({ name: z.string(), amount: z.string().optional(), pro
 const side = z.enum(['left', 'right', 'both', 'none'])
 
 const schemas = {
-  profile: z.object({ ...base, name: z.string(), proteinTarget: z.number().min(0).max(1000).optional() }),
+  profile: z.object({ ...base, name: z.string(), proteinTarget: z.number().min(0).max(1000).optional(), waterTarget: z.number().min(0).max(20_000).optional(), photo: z.string().startsWith('data:image/').max(400_000).optional() }),
   injuries: z.object({
     ...base,
     name: z.string(),
@@ -97,7 +98,7 @@ const schemas = {
   documents: z.object({
     ...base,
     title: z.string(),
-    kind: z.enum(['imaging', 'lab', 'prescription', 'letter', 'physio', 'other']),
+    kind: z.enum(DOCUMENT_KIND_VALUES),
     date: z.string(),
     injuryId: z.string().optional(),
     notes: z.string().optional(),
@@ -113,6 +114,9 @@ const schemas = {
         questions: z.array(z.string()),
         model: z.string().optional(),
         createdAt: z.number(),
+        document: z.object({ title: z.string(), kind: z.enum(DOCUMENT_KIND_VALUES), date: z.string() }).optional(),
+        facts: z.array(extractedFact).optional(),
+        reviewedAt: z.number().optional(),
       })
       .optional(),
   }),
@@ -128,6 +132,23 @@ const schemas = {
     source,
   }),
   savedMeals: z.object({ ...base, name: z.string(), protein: z.number().min(0), calories: z.number().min(0).optional(), items: z.array(foodItem) }),
+  facts: z.object({
+    ...base,
+    kind: z.enum(FACT_KINDS),
+    name: z.string(),
+    value: z.number().optional(),
+    unit: z.string().optional(),
+    range: z.string().optional(),
+    flag: z.enum(FACT_FLAGS).optional(),
+    detail: z.string().optional(),
+    date: z.string(),
+    documentId: z.string().optional(),
+    evidence: z.string().optional(),
+    bodyRegion: z.string().optional(),
+    side: z.enum(['left', 'right', 'both']).optional(),
+    source,
+  }),
+  water: z.object({ ...base, amount: z.number().min(0).max(5000), recordedAt: z.number(), source }),
 } satisfies Record<DataTable, z.ZodType>
 
 const backupSchema = z.object({

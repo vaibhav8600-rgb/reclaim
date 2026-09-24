@@ -3,7 +3,7 @@ import { useGo } from '../lib/nav'
 import { Activity, Dumbbell, FolderHeart, NotebookPen, Ruler, Utensils, X } from 'lucide-react'
 import { db } from '../db/db'
 import { isOpenInjury, useInjuries, useMeta } from '../db/hooks'
-import { save, setMeta } from '../db/repo'
+import { save, setMeta, softDelete } from '../db/repo'
 import { requestPersistence } from '../lib/platform'
 import { severityWord } from '../lib/constants'
 import { haptic } from '../lib/haptics'
@@ -58,7 +58,7 @@ export function QuickLogSheet({ open, onClose }: { open: boolean; onClose: () =>
     const where = injuries?.find((i) => i.id === selected)?.name
     toast(`Pain ${severity} · ${severityWord(severity)}${where ? ` — ${where}` : ''}`, {
       label: 'Undo',
-      onClick: () => db.symptoms.delete(id),
+      onClick: () => softDelete(db.symptoms, id),
     })
   }
 

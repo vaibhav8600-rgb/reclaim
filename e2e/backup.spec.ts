@@ -6,7 +6,7 @@ import { canonical, dumpDb, importBackup, seedDemo } from './helpers'
 test('restore preview counts, then the data lands exactly as in the backup', async ({ page }) => {
   const demo = generateDemoData()
   await page.goto('/settings')
-  await page.locator('input[type=file]').setInputFiles({ name: 'demo.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(demo)) })
+  await page.getByLabel('Backup file').setInputFiles({ name: 'demo.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(demo)) })
 
   const table = page.locator('table')
   const counts = (label: string) => table.getByRole('row', { name: new RegExp(`^${label}\\b`) })
@@ -35,7 +35,7 @@ test('export → delete everything → restore gives back identical data', async
   expect(file.app).toBe('reclaim')
   await expect(page.getByText(/^Last backup /)).toBeVisible()
 
-  const del = page.getByRole('button', { name: 'Delete All Data' })
+  const del = page.getByRole('button', { name: 'Delete Everything' })
   await expect(del).toBeDisabled()
   await page.getByPlaceholder('Type "DELETE"').fill('delete')
   await expect(del).toBeDisabled()
@@ -49,7 +49,7 @@ test('export → delete everything → restore gives back identical data', async
   expect(canonical(after)).toBe(canonical(before))
 
   // Importing the same file again changes nothing.
-  await page.locator('input[type=file]').setInputFiles({ name: 'again.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(file)) })
+  await page.getByLabel('Backup file').setInputFiles({ name: 'again.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(file)) })
   await expect(page.getByText('This iPhone already has everything in this backup.')).toBeVisible()
   await expect(page.getByRole('button', { name: /^Merge 0/ })).toBeDisabled()
 })
@@ -66,7 +66,7 @@ test('merge keeps the newest edit of each record', async ({ page }) => {
 
   // Re-importing the older backup must not overwrite it.
   await page.goto('/settings')
-  await page.locator('input[type=file]').setInputFiles({ name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(demo)) })
+  await page.getByLabel('Backup file').setInputFiles({ name: 'old.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(demo)) })
   await expect(page.getByRole('row', { name: /^Injuries/ })).toHaveText(/^Injuries\s*0\s*0\s*3$/)
   await page.getByRole('button', { name: 'Cancel' }).click()
 
@@ -75,7 +75,7 @@ test('merge keeps the newest edit of each record', async ({ page }) => {
   const elbow = newer.data.injuries.find((i) => i.id === IDS.elbow)!
   elbow.name = 'Tennis elbow (from other device)'
   elbow.updatedAt = Date.now() + 60_000
-  await page.locator('input[type=file]').setInputFiles({ name: 'newer.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(newer)) })
+  await page.getByLabel('Backup file').setInputFiles({ name: 'newer.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(newer)) })
   await expect(page.getByRole('row', { name: /^Injuries/ })).toHaveText(/^Injuries\s*0\s*1\s*2$/)
   await page.getByRole('button', { name: 'Merge 1 Change' }).click()
   await expect(page.getByText('Backup restored')).toBeVisible()
@@ -85,7 +85,7 @@ test('merge keeps the newest edit of each record', async ({ page }) => {
 
 test('rejects files that are not Reclaim backups', async ({ page }) => {
   await page.goto('/settings')
-  const input = page.locator('input[type=file]')
+  const input = page.getByLabel('Backup file')
   await input.setInputFiles({ name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('{not json') })
   await expect(page.getByText("This file isn't valid JSON.")).toBeVisible()
 

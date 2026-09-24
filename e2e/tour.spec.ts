@@ -18,6 +18,10 @@ const screens: [name: string, path: string, heading: string, fullPage?: false][]
   ['symptom-form', '/log/symptom', 'Log Symptom'],
   ['nutrition', '/nutrition', 'Nutrition'],
   ['meal-form', '/log/meal', 'Meal'],
+  ['health', '/health', 'Health Profile'],
+  ['lab', `/health/lab?name=${encodeURIComponent('Vitamin D (25-OH)')}`, 'Vitamin D (25-OH)'],
+  ['fact-form', '/health/facts/new?kind=lab', 'Add a Fact'],
+  ['add-records', '/documents/import', 'Add Records'],
   ['records', '/documents', 'Medical Records'],
   ['add-document', '/documents/new', 'Add Document'],
   ['drive-connect', '/settings/drive', 'Google Drive'],
@@ -94,6 +98,22 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.getByRole('button', { name: 'Summarize with AI' }).click()
     await expect(page.getByText('AI summary — check against the original')).toBeVisible()
     await shot('ai-document')
+    await page.getByRole('link', { name: /Review 6 Facts/ }).click()
+    await expect(page.getByRole('heading', { name: 'Review Facts' })).toBeVisible()
+    await shot('ai-facts-review')
+    await page.goto('/health/summaries')
+    await expect(page.getByRole('heading', { name: 'Record Summaries' })).toBeVisible()
+    await shot('ai-summaries')
+
+    await page.goto('/health')
+    await page.getByRole('button', { name: 'Summarize My Health' }).click()
+    await expect(page.getByRole('heading', { name: 'Needs Attention' })).toBeVisible()
+    await shot('ai-health-overview')
+
+    await page.goto('/plan')
+    await page.getByRole('button', { name: 'Create My Plan' }).click()
+    await expect(page.getByRole('heading', { name: 'Daily Targets' })).toBeVisible()
+    await shot('ai-plan')
 
     await page.goto('/report?injury=demo-injury-elbow')
     await page.getByRole('button', { name: 'Add AI Summary' }).click()

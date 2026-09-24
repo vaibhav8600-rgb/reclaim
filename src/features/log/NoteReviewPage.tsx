@@ -76,7 +76,7 @@ export function NoteReviewPage() {
       await save(db.measurements, {
         kind: m.kind,
         value: m.value,
-        unit: kindInfo(m.kind).unit || m.unit,
+        unit: kindInfo(m.kind).units?.includes(m.unit) ? m.unit : kindInfo(m.kind).unit || m.unit, // keep inches or lb when the note says so
         side: m.side,
         injuryId: m.injuryId && known.has(m.injuryId) ? m.injuryId : undefined,
         notes: `From your note: “${m.evidence}”`,
@@ -129,7 +129,7 @@ export function NoteReviewPage() {
               key={`m${i}`}
               include={m.include}
               onToggle={(v) => setMeasurements((all) => all.map((x, k) => (k === i ? { ...x, include: v } : x)))}
-              title={`${kindInfo(m.kind).label} ${m.value} ${kindInfo(m.kind).unit || m.unit}`}
+              title={`${kindInfo(m.kind).label} ${m.value} ${kindInfo(m.kind).units?.includes(m.unit) ? m.unit : kindInfo(m.kind).unit || m.unit}`}
               meta={[sideLabel(m.side), injuryName(known, m.injuryId)].filter(Boolean).join(' · ')}
               evidence={m.evidence}
             />

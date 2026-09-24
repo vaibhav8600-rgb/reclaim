@@ -102,7 +102,7 @@ export function ReportPage() {
   const painAfter = avg(relevantSessions.flatMap((s) => (s.painAfter === undefined ? [] : [s.painAfter])))
 
   // Measurements: first vs latest per kind/side (whole history, so change is visible)
-  const series = [...data.measurements.reduce((m, x) => m.set(`${x.kind}|${x.side ?? ''}|${x.method ?? ''}`, [...(m.get(`${x.kind}|${x.side ?? ''}|${x.method ?? ''}`) ?? []), x]), new Map<string, typeof data.measurements>())]
+  const series = [...data.measurements.reduce((m, x) => m.set(`${x.kind}|${x.side ?? ''}|${x.method ?? ''}|${x.unit}`, [...(m.get(`${x.kind}|${x.side ?? ''}|${x.method ?? ''}|${x.unit}`) ?? []), x]), new Map<string, typeof data.measurements>())]
 
   // Nutrition: protein on the days anything was logged (a day without logs isn't a day without food)
   const mealDays = dailyProtein(data.meals, days).filter((d) => d.meals)

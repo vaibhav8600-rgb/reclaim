@@ -10,12 +10,10 @@ import { useBack, useGo } from '../../lib/nav'
 import { formatBytes, requestPersistence } from '../../lib/platform'
 import { toast } from '../../lib/toast'
 import { InjuryPicker, SheetForm } from '../log/shared'
-import { DOCUMENT_ACCEPT, DOCUMENT_KINDS, DocumentTile, MAX_DOCUMENT_BYTES } from './kinds'
+import { DOCUMENT_ACCEPT, DOCUMENT_KINDS, DocumentTile, MAX_DOCUMENT_BYTES, titleFromFile } from './kinds'
 
 type Draft = Pick<MedicalDocument, 'title' | 'kind' | 'date' | 'injuryId' | 'notes'>
 
-/** "MRI_left_elbow_2026-01-31.pdf" → "MRI left elbow 2026-01-31" */
-const titleFromFile = (name: string) => name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim()
 
 export function DocumentFormPage() {
   const { id } = useParams()

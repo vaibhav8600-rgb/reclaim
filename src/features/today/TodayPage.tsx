@@ -2,20 +2,21 @@ import { useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router'
 import { MLink } from '../../components/MLink'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, CloudUpload, Plus, Ruler, Smartphone, Sparkles, UserRound } from 'lucide-react'
+import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, ClipboardList, CloudDownload, CloudUpload, HeartPulse, Plus, Ruler, Smartphone, Sparkles, UserRound } from 'lucide-react'
 import { db } from '../../db/db'
-import { isOpenInjury, useEntries, useInjuries, useInjuryMap, useMeals, useMeta, usePrescriptions, useProfile, useSymptomsSince } from '../../db/hooks'
+import { isOpenInjury, useEntries, useInjuries, useInjuryMap, useMeals, useMeta, usePrescriptions, useProfile, useSymptomsSince, useWater } from '../../db/hooks'
 import { alive, setMeta } from '../../db/repo'
 import { ENTRY_INSET, EntryRow } from '../../components/EntryRow'
 import { PainChart } from '../../components/PainChart'
-import { EmptyState, GlassButton, Group, NavBar, Section, SeverityBadge, Tip } from '../../components/ui'
+import { Avatar, EmptyState, GlassButton, Group, NavBar, Section, SeverityBadge, Tip } from '../../components/ui'
 import { kindInfo, severityWord } from '../../lib/constants'
 import { daysAgo, formatLongDate, relativeAge, startOfDay } from '../../lib/dates'
+import { GOOGLE_CLIENT_ID } from '../../lib/google'
 import { isIOS, isStandalone } from '../../lib/platform'
 import { dailySeries, round1, windowAverage } from '../../lib/stats'
 import { WeekCard } from '../rehab/components'
 import type { StoredSummary } from '../insights/InsightsPage'
-import { TodayCard } from '../nutrition/components'
+import { TodayCard, WaterCard } from '../nutrition/components'
 import { dailyProtein } from '../../lib/nutrition'
 
 export function TodayPage() {
@@ -25,8 +26,10 @@ export function TodayPage() {
   const injuryMap = useInjuryMap()
   const open = injuries?.filter(isOpenInjury) ?? []
   const today = useEntries({ from: startOfDay(Date.now()) })
+  // undefined while loading: the restore link waits for the answer instead of flashing in and out.
+  const driveLinked = useLiveQuery(async () => !!(await db.meta.get('drive')), [])
 
-  if (!injuries || !today) return null
+  if (!injuries || !today || driveLinked === undefined) return null
   const initial = profile?.name?.trim()[0]?.toUpperCase()
 
   return (
@@ -36,7 +39,7 @@ export function TodayPage() {
         subtitle={formatLongDate(Date.now())}
         trailing={
           <GlassButton label="Profile and settings" to="/settings">
-            {initial ? <span className="font-rounded text-[1.0625rem]">{initial}</span> : <UserRound size={21} />}
+            {profile?.photo ? <span className="-mx-2.5"><Avatar photo={profile.photo} size={44} /></span> : initial ? <span className="font-rounded text-[1.0625rem]">{initial}</span> : <UserRound size={21} />}
           </GlassButton>
         }
       />
@@ -48,7 +51,13 @@ export function TodayPage() {
           icon={Bandage}
           title="What are you recovering from?"
           body="Add an injury or condition to start tracking pain, symptoms and progress. Everything stays on this iPhone."
-          action={<MLink to="/injuries/new" className="btn btn-primary"><Plus size={20} /> Add Injury</MLink>}
+          action={
+            <div className="flex flex-col items-center gap-2">
+              <MLink to="/injuries/new" className="btn btn-primary"><Plus size={20} /> Add Injury</MLink>
+              {/* After Sign Out (or on a new iPhone), the way back to an encrypted Drive backup */}
+              {GOOGLE_CLIENT_ID && !driveLinked && <MLink to="/settings/drive" className="btn btn-quiet"><CloudDownload size={19} /> Restore from Google Drive</MLink>}
+            </div>
+          }
         />
       ) : (
         <PainCard injuryIds={open.map((i) => i.id)} names={new Map(open.map((i) => [i.id, i.name]))} />
@@ -56,9 +65,11 @@ export function TodayPage() {
 
       {injuries.length > 0 && <InsightsToday />}
 
+      {open.length > 0 && <PlanToday />}
+
       <RehabToday hasInjuries={injuries.length > 0} />
 
-      {injuries.length > 0 && <NutritionToday target={profile?.proteinTarget} />}
+      {injuries.length > 0 && <NutritionToday target={profile?.proteinTarget} waterTarget={profile?.waterTarget} />}
 
       <LatestMeasurements />
 
@@ -191,11 +202,12 @@ function Nudges({ hasData }: { hasData: boolean }) {
   const dismissedInstall = useMeta<boolean>('dismissedInstall')
   const lastBackupAt = useMeta<number>('lastBackupAt')
   const firstEntryAt = useLiveQuery(async () => (await db.symptoms.orderBy('recordedAt').first())?.recordedAt, [])
+  const toReview = useLiveQuery(async () => (await db.documents.toArray()).filter((d) => !d.deletedAt && d.aiSummary?.facts?.length && !d.aiSummary.reviewedAt).length, [])
 
   const showInstall = isIOS() && !isStandalone() && dismissedInstall !== true
   const backupDue = hasData && firstEntryAt !== undefined && (lastBackupAt ?? firstEntryAt) < daysAgo(7)
 
-  if (!showInstall && !backupDue) return null
+  if (!showInstall && !backupDue && !toReview) return null
   return (
     <Section className="space-y-3">
       {showInstall && (
@@ -205,6 +217,15 @@ function Nudges({ hasData }: { hasData: boolean }) {
           title="Add Reclaim to your Home Screen"
           body="Tap Share, then “Add to Home Screen”. It opens full screen, works offline, and Safari won't clear your data."
           onDismiss={() => setMeta('dismissedInstall', true)}
+        />
+      )}
+      {!!toReview && (
+        <Tip
+          icon={HeartPulse}
+          color="pink"
+          title={`${toReview} ${toReview === 1 ? 'record is' : 'records are'} ready to review`}
+          body="Check the lab results, medicines and findings the AI read before they join your Health Profile."
+          to="/health/review"
         />
       )}
       {backupDue && (
@@ -259,16 +280,37 @@ function InsightsToday() {
   )
 }
 
+/** The recovery plan: its state, or an invitation to draft one. */
+function PlanToday() {
+  const plan = useMeta<{ at: number; acceptedAt?: number; result: { exercises: unknown[] } }>('recoveryPlan')
+  return (
+    <Section prominent title="Recovery Plan">
+      <MLink to="/plan" className="card cell cell-press !items-start !py-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"><ClipboardList size={19} /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium">{plan ? (plan.acceptedAt ? 'Your plan and this week’s check' : 'Your draft plan is ready') : 'Draft a plan for your recovery'}</span>
+          <span className="block text-[0.875rem] text-muted">{plan ? `Created ${relativeAge(plan.at)} · update it every week or two` : 'Exercises from a checked library, protein and water targets, and what to watch for'}</span>
+        </span>
+        <ChevronRight size={18} className="mt-2 text-faint" />
+      </MLink>
+    </Section>
+  )
+}
+
 /** Protein so far today; opens Nutrition. */
-function NutritionToday({ target }: { target?: number }) {
+function NutritionToday({ target, waterTarget }: { target?: number; waterTarget?: number }) {
   const meals = useMeals(startOfDay(Date.now()))
-  if (!meals) return null
+  const water = useWater(startOfDay(Date.now()))
+  if (!meals || !water) return null
   const [today] = dailyProtein(meals, 1)
   return (
     <Section prominent title="Nutrition" action={<MLink to="/log/meal" className="text-accent">Log Meal</MLink>}>
-      <MLink to="/nutrition" className="block active:opacity-70">
-        <TodayCard protein={today.protein} calories={today.calories} meals={today.meals} target={target} compact />
-      </MLink>
+      <div className="space-y-3">
+        <MLink to="/nutrition" className="block active:opacity-70">
+          <TodayCard protein={today.protein} calories={today.calories} meals={today.meals} target={target} compact />
+        </MLink>
+        <WaterCard total={water.reduce((a, d) => a + d.amount, 0)} target={waterTarget} compact />
+      </div>
     </Section>
   )
 }

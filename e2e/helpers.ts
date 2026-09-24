@@ -6,7 +6,7 @@ const DAY = 86_400_000
 /** Load a backup through the real Settings → Restore flow (the same path a user takes). */
 export async function importBackup(page: Page, backup: DemoBackup | object, name = 'Reclaim-backup.json') {
   await page.goto('/settings')
-  await page.locator('input[type=file]').setInputFiles({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) })
+  await page.getByLabel('Backup file').setInputFiles({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) })
   await page.getByRole('button', { name: /^Merge \d+/ }).click()
   await expect(page.getByText('Backup restored')).toBeVisible({ timeout: 90_000 })
 }

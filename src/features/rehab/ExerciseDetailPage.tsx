@@ -9,6 +9,7 @@ import { MLink } from '../../components/MLink'
 import { GlassButton, Group, NavBar, Row, Section } from '../../components/ui'
 import { formatShortDate } from '../../lib/dates'
 import { exerciseProgress, formatFrequency, formatTarget } from '../../lib/rehab'
+import { ExerciseAnimation, hasAnimation } from './ExerciseAnimation'
 
 export function ExerciseDetailPage() {
   const { id = '' } = useParams()
@@ -37,6 +38,15 @@ export function ExerciseDetailPage() {
         back="/rehab"
         trailing={!exercise.builtin ? <GlassButton label="Edit exercise" to={`/rehab/exercises/${id}/edit`}><span className="px-1.5">Edit</span></GlassButton> : undefined}
       />
+
+      {(exercise.instructions || hasAnimation(id)) && (
+        <Section prominent title="How To" footer="General guidance. Follow your clinician's instructions, and stop if pain rises sharply.">
+          <div className="card p-4">
+            <ExerciseAnimation exerciseId={id} name={exercise.name} />
+            {exercise.instructions && <p className={`leading-relaxed ${hasAnimation(id) ? 'mt-3 border-t border-line pt-3' : ''}`}>{exercise.instructions}</p>}
+          </div>
+        </Section>
+      )}
 
       {plan ? (
         <Section title="Your Plan" footer={plan.notes}>
@@ -82,12 +92,6 @@ export function ExerciseDetailPage() {
           </div>
         </div>
       </Section>
-
-      {exercise.instructions && (
-        <Section title="How To" footer="General guidance. Follow your clinician's instructions, and stop if pain rises sharply.">
-          <div className="card p-4 leading-relaxed">{exercise.instructions}</div>
-        </Section>
-      )}
     </div>
   )
 }

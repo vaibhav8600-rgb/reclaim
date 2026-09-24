@@ -3,7 +3,7 @@ import { db, type MedicalDocument } from '../db/db'
 import { getMeta, newId, onLocalChange, setMeta } from '../db/repo'
 import { deriveKey, newVaultParams, open, openText, readHeader, seal, WrongPassphraseError, type VaultParams } from './crypto'
 import { deleteFile, downloadFile, DriveAuthError, listFiles, uploadFile, type DriveFile } from './drive'
-import { cachedToken, fetchEmail } from './google'
+import { cachedToken, fetchEmail, forgetToken } from './google'
 
 /**
  * Google Drive sync. Everything is encrypted on the device before upload.
@@ -83,20 +83,47 @@ export async function connectDrive(token: string, passphrase: string, existing: 
   await syncNow(token)
 }
 
-export async function disconnectDrive() {
-  await Promise.all(['vault', 'drive', 'lastMergedSnapshot', 'lastSyncAt'].map((k) => db.meta.delete(k)))
-  setStatus({ state: 'idle' })
+/**
+ * Sign out: back up everything to Drive first, then clear this device. Signing in again (with the passphrase)
+ * brings it all back. If the backup fails, nothing is cleared.
+ */
+export async function signOut(token: string) {
+  const started = Date.now()
+  await syncNow(token)
+  await syncNow(token, true) // a run already in progress may have started before the latest edits; this one always uploads
+  // Never clear the device on the assumption that a backup happened: a sync without a vault returns quietly.
+  if (((await getMeta<number>('lastSyncAt')) ?? 0) < started) throw new Error('The backup to Google Drive didn’t finish.')
+  forgetToken()
+  await db.delete()
+}
+
+/** Delete every Reclaim file in the Drive app folder: snapshots and encrypted records. */
+export async function deleteDriveData(token: string) {
+  for (let round = 0; round < 50; round++) {
+    const files = await listFiles(token, 'reclaim-') // 100 per page: repeat until none are left
+    if (!files.length) return
+    await Promise.all(files.map((f) => deleteFile(token, f.id)))
+  }
 }
 
 let running: Promise<void> | undefined
 
-/** Pull → files → push. Concurrent calls share one run. */
-export function syncNow(token = cachedToken()): Promise<void> {
-  running ??= run(token).finally(() => (running = undefined))
+/**
+ * Pull → files → push. Concurrent calls share one run. The push (a full encrypted snapshot) only happens when
+ * something changed on this device since the last one, unless `force` (Sync Now, Sign Out): opening the app
+ * just checks Drive for newer snapshots, one small request.
+ */
+export function syncNow(token = cachedToken(), force = false): Promise<void> {
+  running ??= run(token, force).finally(() => (running = undefined))
   return running
 }
 
-async function run(token: string | undefined) {
+/** When this device last changed data (set on every local edit). */
+const CHANGED_KEY = 'localChangesAt'
+/** When the last pushed snapshot was built. */
+const PUSHED_KEY = 'lastPushAt'
+
+async function run(token: string | undefined, force: boolean) {
   const vault = await getVault()
   if (!vault) return
   if (!token) return setStatus({ state: 'error', error: 'Sign in to Google to sync.', needsSignIn: true })
@@ -112,12 +139,14 @@ async function run(token: string | undefined) {
     }
 
     // Files
+    let filesChanged = false
     const docs = await db.documents.toArray()
     for (const d of docs) {
       if (d.deletedAt && d.driveFileId) {
         await deleteFile(token, d.driveFileId)
         await db.documents.put({ ...d, driveFileId: undefined, updatedAt: Date.now() })
         await db.files.delete(d.id)
+        filesChanged = true
       } else if (!d.deletedAt && !d.driveFileId) {
         const file = await db.files.get(d.id)
         if (!file) continue
@@ -125,11 +154,19 @@ async function run(token: string | undefined) {
         const sealed = await seal(vault.key, new Uint8Array(file.bytes), { kind: 'document', ...vault.params, mimeType: d.mimeType })
         const driveFileId = await uploadFile(token, `reclaim-doc-${d.id}`, sealed, { docId: d.id })
         await db.documents.put({ ...d, driveFileId, updatedAt: Date.now() })
+        filesChanged = true
       }
     }
 
-    // Push
+    // Push, only when there's something new to send
+    const [changedAt, pushedAt] = await Promise.all([getMeta<number>(CHANGED_KEY), getMeta<number>(PUSHED_KEY)])
+    if (!force && !filesChanged && pushedAt !== undefined && (changedAt ?? 0) <= pushedAt) {
+      await setMeta('lastSyncAt', Date.now())
+      return setStatus({ state: 'idle' })
+    }
+
     setStatus({ state: 'syncing', step: 'Backing up…' })
+    const builtAt = Date.now() // edits after this moment belong to the next push
     const sealed = await seal(vault.key, JSON.stringify(await buildBackup()), { kind: 'snapshot', ...vault.params })
     const id = await uploadFile(token, `${SNAPSHOT}${Date.now()}`, sealed, {
       salt: vault.params.salt,
@@ -139,6 +176,7 @@ async function run(token: string | undefined) {
     })
     const now = Date.now()
     await setMeta('lastMergedSnapshot', id)
+    await setMeta(PUSHED_KEY, builtAt)
     await setMeta('lastSyncAt', now)
     await setMeta('lastBackupAt', now)
     // Re-list so snapshots uploaded meanwhile by another device are counted too.
@@ -148,7 +186,7 @@ async function run(token: string | undefined) {
   } catch (e) {
     setStatus({
       state: 'error',
-      error: e instanceof WrongPassphraseError ? 'Your Drive backup was encrypted with a different passphrase. Disconnect and reconnect to enter it.' : (e as Error).message,
+      error: e instanceof WrongPassphraseError ? 'Your Drive backup was encrypted with a different passphrase. Sign out and restore to enter it.' : (e as Error).message,
       needsSignIn: e instanceof DriveAuthError,
     })
     throw e
@@ -180,11 +218,18 @@ export function startAutoSync() {
     if (!navigator.onLine || !cachedToken()) return
     void getVault().then((v) => v && syncNow().catch(() => {}))
   }
+  let checkedAt = 0
   onLocalChange(() => {
+    void setMeta(CHANGED_KEY, Date.now())
     clearTimeout(timer)
-    timer = setTimeout(maybeSync, 8000)
+    timer = setTimeout(maybeSync, 8000) // edits in quick succession go up together
   })
-  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && maybeSync())
+  // Coming back to the app checks Drive for changes from other devices, at most once a minute.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || Date.now() - checkedAt < 60_000) return
+    checkedAt = Date.now()
+    maybeSync()
+  })
   window.addEventListener('online', maybeSync)
   maybeSync()
 }

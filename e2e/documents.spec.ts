@@ -74,6 +74,7 @@ test('files over 25 MB are refused with a clear message', async ({ page }) => {
 })
 
 test('records sync encrypted, open on another device, and deleting removes them from Drive', async ({ browser }, info) => {
+  test.slow() // two devices, each deriving the passphrase key (600k PBKDF2 rounds): slow when tests run in parallel
   const drive = new FakeDrive()
   const phone = await newDevice(browser, info, drive)
   await importBackup(phone, injuriesBackup('Tennis elbow'))

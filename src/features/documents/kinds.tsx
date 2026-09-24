@@ -38,3 +38,6 @@ export function DocumentRow({ doc, injuryName }: { doc: MedicalDocument; injuryN
 /** Files people add: PDFs and photos/scans. iOS offers camera, photo library and Files. */
 export const DOCUMENT_ACCEPT = 'application/pdf,image/*'
 export const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024
+
+/** "MRI_left_elbow_2026-01-31.pdf" → "MRI left elbow 2026-01-31" */
+export const titleFromFile = (name: string) => name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim()

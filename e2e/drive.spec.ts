@@ -67,6 +67,7 @@ test('a new device unlocks the backups with the passphrase and gets everything',
 })
 
 test('two devices stay in sync: additions and deletions travel both ways', async ({ browser }, info) => {
+  test.slow() // two devices, each deriving the passphrase key (600k PBKDF2 rounds): slow when tests run in parallel
   const drive = new FakeDrive()
   const phone = await newDevice(browser, info, drive)
   await importBackup(phone, injuriesBackup('Tennis elbow'))
@@ -126,16 +127,83 @@ test('if the Drive checkbox is left unticked, the app explains it and asks Googl
   expect(await page.evaluate(() => (window as unknown as { __gisPrompts: string[] }).__gisPrompts)).toEqual(['', 'consent'])
 })
 
-test('disconnecting keeps the data on the device', async ({ browser }, info) => {
+test('sign out backs up first, clears this device, and restoring brings everything back', async ({ browser }, info) => {
+  test.slow() // passphrase key derived twice
   const drive = new FakeDrive()
   const page = await newDevice(browser, info, drive)
   await importBackup(page, injuriesBackup('Tennis elbow'))
   await connectDrive(page, PASS)
-  page.once('dialog', (d) => d.accept())
-  await page.getByRole('button', { name: 'Disconnect' }).click()
-  await expect(page.getByText('Google Drive disconnected')).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Connect Google Drive' })).toBeVisible()
+  // An edit made just before signing out must be in the backup too.
+  await page.goto('/injuries/new')
+  await page.getByPlaceholder('Left elbow pain').fill('Runner’s knee')
+  await page.getByLabel('Body Region').selectOption('Knee')
+  await page.getByRole('radio', { name: 'Right' }).click()
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText('Injury added')).toBeVisible()
+
+  await page.goto('/settings')
+  await page.getByRole('button', { name: 'Sign Out' }).click()
+  await page.getByRole('button', { name: 'Back Up and Sign Out' }).click()
+  await expect(page.getByText('What are you recovering from?')).toBeVisible({ timeout: 60_000 })
+  expect((await dumpDb(page)).injuries ?? []).toHaveLength(0)
+
+  await page.getByRole('link', { name: 'Restore from Google Drive' }).click()
+  await page.getByRole('button', { name: 'Continue with Google' }).click()
+  await expect(page.getByRole('heading', { name: 'Enter your passphrase' })).toBeVisible()
+  await page.getByLabel('Passphrase', { exact: true }).fill(PASS)
+  await page.getByRole('button', { name: 'Unlock' }).click()
+  await expect(page.getByText('Google Drive connected')).toBeVisible({ timeout: 90_000 })
   await page.goto('/injuries')
   await expect(page.getByRole('link', { name: /Tennis elbow/ })).toBeVisible()
-  expect(drive.snapshots()).toHaveLength(1) // backups stay in Drive
+  await expect(page.getByRole('link', { name: /Runner’s knee/ })).toBeVisible()
+})
+
+test('delete everything removes this device’s data and the Drive backups: a true fresh start', async ({ browser }, info) => {
+  const drive = new FakeDrive()
+  const page = await newDevice(browser, info, drive)
+  await importBackup(page, injuriesBackup('Tennis elbow'))
+  await connectDrive(page, PASS)
+  expect(drive.snapshots().length).toBeGreaterThan(0)
+
+  await page.goto('/settings')
+  await expect(page.getByText(/and your encrypted backups in Google Drive/)).toBeVisible()
+  await page.getByPlaceholder('Type "DELETE"').fill('DELETE')
+  await page.getByRole('button', { name: 'Delete Everything' }).click()
+  await expect(page.getByText('What are you recovering from?')).toBeVisible({ timeout: 60_000 })
+  expect(drive.snapshots()).toHaveLength(0)
+
+  // Signing in again finds nothing to restore: it starts a new encrypted backup.
+  await page.getByRole('link', { name: 'Restore from Google Drive' }).click()
+  await page.getByRole('button', { name: 'Continue with Google' }).click()
+  await expect(page.getByRole('heading', { name: 'Create a passphrase' })).toBeVisible()
+
+  // Once connected, the first screen no longer offers a restore (there's nothing to restore into).
+  await page.getByLabel('Passphrase', { exact: true }).fill(PASS)
+  await page.getByLabel('Confirm passphrase').fill(PASS)
+  await page.getByRole('checkbox').check()
+  await page.getByRole('button', { name: 'Encrypt and Back Up' }).click()
+  await expect(page.getByText('Google Drive connected')).toBeVisible({ timeout: 90_000 })
+  await page.goto('/')
+  await expect(page.getByText('What are you recovering from?')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Restore from Google Drive' })).toHaveCount(0)
+})
+
+test('background sync uploads only when something changed; returning to the app just checks', async ({ browser }, info) => {
+  test.slow()
+  const drive = new FakeDrive()
+  const page = await newDevice(browser, info, drive)
+  await importBackup(page, injuriesBackup('Tennis elbow'))
+  await connectDrive(page, PASS)
+  expect(drive.snapshots()).toHaveLength(1)
+
+  // Coming back to the app with nothing new: no new snapshot.
+  await tab(page, 'Today').click() // in-app navigation: the Google sign-in stays in memory
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+  await page.waitForTimeout(3000)
+  expect(drive.snapshots()).toHaveLength(1)
+
+  // An edit goes up by itself a few seconds later.
+  await page.getByRole('button', { name: 'Quick log' }).click()
+  await page.getByRole('dialog', { name: 'Quick log' }).getByRole('radio', { name: '3', exact: true }).click()
+  await expect.poll(() => drive.snapshots().length, { timeout: 30_000 }).toBe(2)
 })
