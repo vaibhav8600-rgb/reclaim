@@ -37,7 +37,6 @@ const InsightsPage = page(() => import('./features/insights/InsightsPage'), 'Ins
 const ReportPage = page(() => import('./features/report/ReportPage'), 'ReportPage')
 const NutritionPage = page(() => import('./features/nutrition/NutritionPage'), 'NutritionPage')
 const MealLogPage = page(() => import('./features/nutrition/MealLogPage'), 'MealLogPage')
-const HealthImportPage = page(() => import('./features/settings/HealthImportPage'), 'HealthImportPage')
 const HealthSetupPage = page(() => import('./features/settings/HealthSetupPage'), 'HealthSetupPage')
 const FoodPage = page(() => import('./features/nutrition/FoodPage'), 'FoodPage')
 const GoalsPage = page(() => import('./features/goals/GoalsPage'), 'GoalsPage')
@@ -85,7 +84,6 @@ export function App() {
             <Route path="plan" element={<PlanPage />} />
             <Route path="goals" element={<GoalsPage />} />
             <Route path="nutrition/foods/:id" element={<FoodPage />} />
-            <Route path="import/health" element={<HealthImportPage />} />
             <Route path="settings/health" element={<HealthSetupPage />} />
             <Route path="weight" element={<WeightPage />} />
             <Route path="health/lab" element={<LabPage />} />

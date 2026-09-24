@@ -1,11 +1,13 @@
 /**
  * Apple Health → Reclaim, through an iPhone Shortcut (a web app can't read HealthKit itself).
  *
- * The Shortcut writes one line per sample and opens `/import/health#d=<url-encoded lines>`:
- *   steps,2026-09-24,6420                         a day's steps (several lines for a day are added up)
- *   exercise,2026-09-24,35                        a day's exercise minutes
- *   weight,2026-09-24T07:30,85.4[,lb]             kg unless the unit says lb
- *   sleep,2026-09-23T23:10,2026-09-24T02:05[,Core] one sleep segment; "In Bed" and "Awake" are ignored
+ * The Shortcut writes one line per sample and copies them; the user pastes them in Settings → Apple Health
+ * (a Shortcut can't open a Home Screen web app, and Safari keeps separate storage):
+ *   steps;2026-09-24;6420                          a day's steps (several lines for a day are added up)
+ *   exercise;2026-09-24;35                         a day's exercise minutes
+ *   weight;2026-09-24 07:30;85.4[;lb]              kg unless the value or unit says lb
+ *   sleep;2026-09-23 23:10;2026-09-24 02:05[;Core] one sleep segment; "In Bed" and "Awake" are ignored
+ * Fields split on ";" or tabs when a line has them (so "6,420" and "85,4" survive), otherwise on commas.
  * Sleep segments less than an hour apart join into one night. Anything else is counted and skipped.
  */
 
@@ -24,7 +26,9 @@ const parseTime = (s: string) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(s.trim())
   return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0)).getTime() : NaN
 }
-const number = (s?: string) => Number((s ?? '').trim().replace(/,(?=\d{3}\b)/g, '').replace(/[^\d.]/g, '') || NaN)
+/** "6,420", "6 420", "85,4" and "85.4 kg" all read as numbers. */
+const number = (s?: string) =>
+  Number((s ?? '').replace(/\s/g, '').replace(/,(?=\d{3}\b)/g, '').replace(',', '.').replace(/[^\d.]/g, '') || NaN)
 
 export function parseHealthExport(text: string, now = Date.now()): HealthImport {
   const out: HealthImport = { steps: new Map(), exercise: new Map(), weights: [], nights: [], skipped: 0 }
@@ -32,13 +36,13 @@ export function parseHealthExport(text: string, now = Date.now()): HealthImport 
   for (const raw of text.split(/\r?\n/).slice(0, MAX_LINES)) {
     const line = raw.trim()
     if (!line) continue
-    const [kind, a, b, c] = line.split(/\s*[,;\t]\s*/)
+    const [kind, a, b, c] = line.split(/[;\t]/.test(line) ? /\s*[;\t]\s*/ : /\s*,\s*/)
     const k = kind?.toLowerCase()
     if ((k === 'steps' || k === 'exercise') && DAY.test(a ?? '') && Number.isFinite(number(b)) && number(b) >= 0) {
       const map = k === 'steps' ? out.steps : out.exercise
       map.set(a, (map.get(a) ?? 0) + Math.round(number(b)))
     } else if (k === 'weight' && Number.isFinite(parseTime(a ?? '')) && number(b) > 0) {
-      const kg = c?.toLowerCase().startsWith('lb') ? number(b) / 2.20462 : number(b)
+      const kg = /lb/i.test(`${b} ${c ?? ''}`) ? number(b) / 2.20462 : number(b)
       if (kg < 20 || kg > 400 || parseTime(a) > now) out.skipped++
       else out.weights.push({ at: parseTime(a), kg: Math.round(kg * 10) / 10 })
     } else if (k === 'sleep' && Number.isFinite(parseTime(a ?? '')) && Number.isFinite(parseTime(b ?? ''))) {
