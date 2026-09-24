@@ -225,7 +225,7 @@ function Nudges({ hasData }: { hasData: boolean }) {
           color="pink"
           title={`${toReview} ${toReview === 1 ? 'record is' : 'records are'} ready to review`}
           body="Check the lab results, medicines and findings the AI read before they join your Health Profile."
-          to="/health"
+          to="/health/review"
         />
       )}
       {backupDue && (

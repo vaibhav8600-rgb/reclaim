@@ -88,8 +88,11 @@ export async function connectDrive(token: string, passphrase: string, existing: 
  * brings it all back. If the backup fails, nothing is cleared.
  */
 export async function signOut(token: string) {
+  const started = Date.now()
   await syncNow(token)
   await syncNow(token) // a run already in progress may have started before the latest edits
+  // Never clear the device on the assumption that a backup happened: a sync without a vault returns quietly.
+  if (((await getMeta<number>('lastSyncAt')) ?? 0) < started) throw new Error('The backup to Google Drive didn’t finish.')
   forgetToken()
   await db.delete()
 }
