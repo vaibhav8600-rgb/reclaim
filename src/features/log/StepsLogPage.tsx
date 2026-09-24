@@ -1,11 +1,14 @@
 import { useEffect, useState, type ChangeEvent } from 'react'
 import { useSearchParams } from 'react-router'
+import { ClipboardPaste, Play } from 'lucide-react'
 import { db } from '../../db/db'
 import { restore, save, softDelete } from '../../db/repo'
 import { DateRow, Group } from '../../components/ui'
+import { MLink } from '../../components/MLink'
 import { activityId } from '../../lib/daily'
 import { dayKey, formatMediumDate, fromDayKey } from '../../lib/dates'
 import { haptic } from '../../lib/haptics'
+import { parseHealthExport, RUN_SHORTCUT } from '../../lib/healthImport'
 import { useBack } from '../../lib/nav'
 import { toast } from '../../lib/toast'
 import { DeleteRow, SheetForm } from './shared'
@@ -57,6 +60,17 @@ export function StepsLogPage() {
     back()
   }
 
+  // Filled from what the Reclaim Health Shortcut copied (see Settings → Apple Health).
+  async function paste() {
+    try {
+      const n = parseHealthExport(await navigator.clipboard.readText()).steps.get(day)
+      if (n === undefined) toast('No steps on the clipboard for this day — tap Get from Health first')
+      else setForm({ ...form!, steps: String(n) })
+    } catch {
+      toast('Couldn’t read the clipboard — type the number instead')
+    }
+  }
+
   const set = (k: 'steps' | 'minutes' | 'km') => (e: ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value })
   return (
     <SheetForm title="Steps & Activity" canSave={valid} onSubmit={submit} onClose={back}>
@@ -66,7 +80,11 @@ export function StepsLogPage() {
           <input className="font-rounded w-full min-w-0 bg-transparent text-[2.5rem] font-semibold outline-none placeholder:text-faint" inputMode="numeric" value={form.steps} onChange={set('steps')} placeholder="0" aria-label="Steps" autoFocus={!form.existing} />
           <span className="shrink-0 text-[1.25rem] font-medium text-muted">steps</span>
         </label>
-        <p className="section-footer">Copy today’s number from your phone’s Health or Fitness app.</p>
+        <div className="mt-2 grid grid-cols-[3fr_2fr] gap-2">
+          <a className="btn btn-soft whitespace-nowrap" href={RUN_SHORTCUT}><Play size={17} /> Get from Health</a>
+          <button type="button" className="btn btn-soft" onClick={paste}><ClipboardPaste size={17} /> Paste</button>
+        </div>
+        <p className="section-footer">Tap Get from Health, come back, then Paste. First time? <MLink to="/settings/health" className="text-accent">Set it up once</MLink> (2 minutes).</p>
       </div>
 
       <Group>

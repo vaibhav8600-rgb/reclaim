@@ -60,3 +60,28 @@ test('paste what the Shortcut copied: it imports, and the same data twice change
   await page.getByRole('button', { name: 'Import', exact: true }).click()
   await expect(page.getByText(/No Apple Health data there/)).toBeVisible()
 })
+
+test('the two-action Shortcut copies just today’s number, in whatever format the phone uses', () => {
+  const today = (s: string) => parseHealthExport(s, NOW).steps.get('2026-09-24')
+  expect(today('6420')).toBe(6420)
+  expect(today('6,420 steps')).toBe(6420)
+  expect(today('6 420')).toBe(6420)
+  expect(today('6.420')).toBe(6420)
+  expect(today('6420.0')).toBe(6420)
+  expect(today('Steps: 812 count')).toBe(812)
+  expect(today('hello')).toBeUndefined()
+  expect(parseHealthExport('9999999', NOW).skipped).toBe(1)
+})
+
+test('steps page: Get from Health, then Paste fills in today’s steps', async ({ page, context, browserName }) => {
+  test.skip(browserName === 'webkit', 'Playwright can’t grant clipboard access in WebKit')
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.goto('/log/steps')
+  await expect(page.getByRole('link', { name: 'Get from Health' })).toHaveAttribute('href', 'shortcuts://run-shortcut?name=Reclaim%20Health')
+  await page.evaluate(() => navigator.clipboard.writeText('7,315 steps'))
+  await page.getByRole('button', { name: 'Paste' }).click()
+  await expect(page.getByLabel('Steps', { exact: true })).toHaveValue('7315')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByText('7,315 steps saved')).toBeVisible()
+  expect((await dumpDb(page)).activity).toMatchObject([{ steps: 7315 }])
+})

@@ -9,7 +9,16 @@
  *   sleep;2026-09-23 23:10;2026-09-24 02:05[;Core] one sleep segment; "In Bed" and "Awake" are ignored
  * Fields split on ";" or tabs when a line has them (so "6,420" and "85,4" survive), otherwise on commas.
  * Sleep segments less than an hour apart join into one night. Anything else is counted and skipped.
+ *
+ * The simple Shortcut (Find Health Samples: Steps, today, grouped by day → Copy to Clipboard) copies just a number,
+ * perhaps with a unit ("6,420 steps"): that's today's steps.
  */
+import { dayKey } from './dates'
+
+/** Opens the Shortcut built from Settings → Apple Health. */
+export const RUN_SHORTCUT = 'shortcuts://run-shortcut?name=Reclaim%20Health'
+/** First number in the text: "6,420", "6 420", "6.420" and "6420.0" are all 6420. */
+const TODAYS_STEPS = /\d{1,3}(?:[ ,.\u00a0\u202f]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?/
 
 export interface HealthImport {
   steps: Map<string, number>
@@ -32,6 +41,13 @@ const number = (s?: string) =>
 
 export function parseHealthExport(text: string, now = Date.now()): HealthImport {
   const out: HealthImport = { steps: new Map(), exercise: new Map(), weights: [], nights: [], skipped: 0 }
+  const bare = text.trim()
+  if (bare && !/[\n;\t]/.test(bare) && !/^(steps|exercise|weight|sleep)\s*,/i.test(bare)) {
+    const n = Number(TODAYS_STEPS.exec(bare)?.[0].replace(/[.,]\d{1,2}$/, '').replace(/\D/g, '') || NaN)
+    if (n <= 200_000) out.steps.set(dayKey(now), n)
+    else out.skipped++
+    return out
+  }
   const segments: { start: number; end: number }[] = []
   for (const raw of text.split(/\r?\n/).slice(0, MAX_LINES)) {
     const line = raw.trim()
