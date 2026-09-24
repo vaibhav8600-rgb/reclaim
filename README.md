@@ -39,6 +39,9 @@ grouped by day → Copy to Clipboard) copies today’s steps. **Settings → App
 a link: a Shortcut can only open Safari, which keeps separate storage from the Home Screen app.) The Settings page
 also imports a longer line format with several days, weight and sleep (see `src/lib/healthImport.ts`).
 
+Illustrated step-by-step guide: [Apple Health setup guide](https://claude.ai/artifact/TeLGDUGFJszL5z7mSXPJLy)
+(private: only the owner, or people it's shared with, can open it).
+
 ## Google Drive backup (optional)
 
 Encrypted backup, sync between devices, and medical records in your Drive. It needs a free Google client ID;
