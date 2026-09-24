@@ -181,6 +181,7 @@ test('one overview across all records: out of range, changes over time, question
   await page.getByRole('link', { name: /^2.1 mg\/L/ }).click()
   await page.getByLabel('Value').fill('2.4')
   await page.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText('Fact updated')).toBeVisible() // let the sheet close before navigating away
   await page.goto('/health')
   await expect(page.getByText('Your records have changed since this overview.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Update Overview' })).toBeVisible()

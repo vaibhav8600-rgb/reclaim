@@ -16,6 +16,7 @@ import { useGo } from '../../lib/nav'
 import { clampDose, dailyTargets, weeklyCheck, type Check } from '../../lib/plan'
 import { formatFrequency, formatTarget } from '../../lib/rehab'
 import { toast } from '../../lib/toast'
+import { ExerciseAnimation } from '../rehab/ExerciseAnimation'
 
 export interface StoredPlan {
   result: AiOutput<'recovery-plan'>
@@ -155,6 +156,7 @@ export function PlanPage() {
                             />
                           )}
                         </div>
+                        <div className="mt-3"><ExerciseAnimation exerciseId={i.exercise.id} name={i.exercise.name} compact /></div>
                         {i.why && <p className="mt-2 text-[0.9375rem]">{i.why}</p>}
                         <p className="mt-2 text-[0.875rem] text-muted"><span className="font-semibold">Progress: </span>{i.guide.progression}</p>
                         {i.guide.caution && <p className="mt-1 text-[0.875rem] text-muted"><span className="font-semibold">Note: </span>{i.guide.caution}</p>}

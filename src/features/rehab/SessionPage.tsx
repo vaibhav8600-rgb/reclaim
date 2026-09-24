@@ -13,6 +13,7 @@ import { DRAFT_KEY, itemDone, itemsFromPlan, type SessionDraft } from '../../lib
 import { toast } from '../../lib/toast'
 import { DeleteRow, SheetForm } from '../log/shared'
 import { CompactScale } from './components'
+import { ExerciseAnimation, hasAnimation } from './ExerciseAnimation'
 
 export function SessionPage() {
   const [params] = useSearchParams()
@@ -151,6 +152,7 @@ function ItemCard({ item, exercise, onChange, onRemove }: {
   const setAt = (k: number, patch: Partial<SessionItem['sets'][number]>) =>
     onChange((i) => ({ ...i, sets: i.sets.map((x, j) => (j === k ? { ...x, ...patch } : x)) }))
   const done = item.sets.filter((x) => x.done).length
+  const [showHow, setShowHow] = useState(false)
 
   return (
     <section aria-label={name}>
@@ -159,10 +161,18 @@ function ItemCard({ item, exercise, onChange, onRemove }: {
           <h3 className="truncate text-[1.0625rem] font-semibold">{name}</h3>
           <p className="text-[0.8125rem] text-muted">{done} of {item.sets.length} sets</p>
         </div>
-        <button type="button" onClick={onRemove} aria-label={`Remove ${name}`} className="flex h-7 w-7 items-center justify-center rounded-full bg-fill text-muted">
-          <X size={14} strokeWidth={2.6} />
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {hasAnimation(item.exerciseId) && (
+            <button type="button" onClick={() => setShowHow((v) => !v)} aria-expanded={showHow} className="h-7 rounded-full bg-fill px-3 text-[0.8125rem] font-semibold text-accent">
+              {showHow ? 'Hide' : 'How to'}
+            </button>
+          )}
+          <button type="button" onClick={onRemove} aria-label={`Remove ${name}`} className="flex h-7 w-7 items-center justify-center rounded-full bg-fill text-muted">
+            <X size={14} strokeWidth={2.6} />
+          </button>
+        </div>
       </div>
+      {showHow && <div className="card mb-2 p-3"><ExerciseAnimation exerciseId={item.exerciseId} name={name} compact /></div>}
       <Group>
         {item.sets.map((set, k) => (
           <div key={k} className="cell !py-2">
