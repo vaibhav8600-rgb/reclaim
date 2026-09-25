@@ -7,6 +7,7 @@ import { qualityLabel, sleepHours } from './daily'
 import { dailyTotals } from './nutrition'
 import { adjustments, candidates } from './plan'
 import { checkInTrend } from './checkin'
+import { painPatterns } from './patterns'
 import { reachLabel, reachTrend } from './reach'
 import { itemDone, settledByMorning, startOfWeek, weeklyAdherence } from './rehab'
 
@@ -90,6 +91,8 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
         averageEarlierHalf: avg(logs.filter((s) => s.recordedAt < half).map((s) => s.severity)),
         averageByTimeOfDay: { morning: byTime(5, 12), afternoon: byTime(12, 17), evening: byTime(17, 24) },
         daily: [...byDay].sort().map(([date, v]) => ({ date, avg: avg(v), logs: v.length })),
+        // Differences in this pain by steps, sleep and rehab the day before (at least 5 days each side, 1+ point)
+        patterns: painPatterns({ pain: logs, steps: activity.filter(alive), sleep: sleeps.filter(alive), sessions: sessions.filter(alive) }).found.map((p) => p.text),
         // Back or neck: how far down the leg or arm symptoms reach, and whether that's moving back towards the spine
         reach: (() => {
           const r = liveSymptoms.filter((s) => s.injuryId === i.id && s.reach !== undefined).sort((a, b) => a.recordedAt - b.recordedAt)

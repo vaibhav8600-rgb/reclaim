@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { useParams } from 'react-router'
 import { useGo } from '../../lib/nav'
 import { MLink } from '../../components/MLink'
@@ -17,6 +17,10 @@ import { daysAgo, daysBetween, formatMediumDate, fromDayKey } from '../../lib/da
 import { limbOf, reachLabel, reachScale, reachTrend } from '../../lib/reach'
 import { dailySeries, windowAverage } from '../../lib/stats'
 import { toast } from '../../lib/toast'
+
+// Loaded with the page rather than the app: the explanations and their sources aren't needed at start-up.
+const ConditionCard = lazy(() => import('./InjuryInsights').then((m) => ({ default: m.ConditionCard })))
+const Patterns = lazy(() => import('./InjuryInsights').then((m) => ({ default: m.Patterns })))
 
 const RANGES = [
   { value: '14', label: '14D' },
@@ -83,6 +87,10 @@ export function InjuryDetailPage() {
         </Group>
       </Section>
 
+      <Suspense fallback={null}>
+        <ConditionCard injury={injury} />
+      </Suspense>
+
       <Section prominent title="Pain">
         <div className="card p-4">
           <Segmented options={[...RANGES]} value={range} onChange={setRange} />
@@ -121,6 +129,10 @@ export function InjuryDetailPage() {
           </Group>
         </Section>
       )}
+
+      <Suspense fallback={null}>
+        <Patterns injuryId={id} />
+      </Suspense>
 
       <Section>
         <div className="grid grid-cols-2 gap-3">
