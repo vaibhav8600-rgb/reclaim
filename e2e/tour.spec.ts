@@ -21,6 +21,8 @@ const screens: [name: string, path: string, heading: string, fullPage?: false][]
   ['my-food', '/nutrition/foods/new', 'New Food'],
   ['apple-health', '/settings/health', 'Apple Health'],
   ['safety', '/safety', 'Warning Signs'],
+  ['checkin', '/checkin', 'Weekly Check-in'],
+  ['progress', '/progress', 'How You’re Doing'],
   ['weight', '/weight', 'Weight'],
   ['sleep-form', '/log/sleep', 'Sleep'],
   ['steps-form', '/log/steps', 'Steps & Activity'],

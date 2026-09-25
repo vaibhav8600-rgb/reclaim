@@ -43,6 +43,8 @@ const GoalsPage = page(() => import('./features/goals/GoalsPage'), 'GoalsPage')
 const WeightPage = page(() => import('./features/goals/WeightPage'), 'WeightPage')
 const WelcomePage = page(() => import('./features/goals/WelcomePage'), 'WelcomePage')
 const SleepLogPage = page(() => import('./features/log/SleepLogPage'), 'SleepLogPage')
+const CheckInPage = page(() => import('./features/checkin/CheckInPage'), 'CheckInPage')
+const ProgressPage = page(() => import('./features/checkin/ProgressPage'), 'ProgressPage')
 const StepsLogPage = page(() => import('./features/log/StepsLogPage'), 'StepsLogPage')
 const HealthPage = page(() => import('./features/health/HealthPage'), 'HealthPage')
 const SafetyCheckPage = page(() => import('./features/health/SafetyCheckPage'), 'SafetyCheckPage')
@@ -83,6 +85,7 @@ export function App() {
             <Route path="nutrition" element={<NutritionPage />} />
             <Route path="health" element={<HealthPage />} />
             <Route path="safety" element={<SafetyCheckPage />} />
+            <Route path="progress" element={<ProgressPage />} />
             <Route path="plan" element={<PlanPage />} />
             <Route path="goals" element={<GoalsPage />} />
             <Route path="nutrition/foods/:id" element={<FoodPage />} />
@@ -102,6 +105,7 @@ export function App() {
           <Route path="log/review" element={<NoteReviewPage />} />
           <Route path="log/meal" element={<MealLogPage />} />
           <Route path="log/sleep" element={<SleepLogPage />} />
+          <Route path="checkin" element={<CheckInPage />} />
           <Route path="welcome" element={<WelcomePage />} />
           <Route path="log/steps" element={<StepsLogPage />} />
           <Route path="rehab/session" element={<SessionPage />} />

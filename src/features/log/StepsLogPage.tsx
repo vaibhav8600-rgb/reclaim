@@ -1,12 +1,15 @@
 import { useEffect, useState, type ChangeEvent } from 'react'
 import { useSearchParams } from 'react-router'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { ClipboardPaste, Play } from 'lucide-react'
 import { db } from '../../db/db'
 import { restore, save, softDelete } from '../../db/repo'
 import { DateRow, Group } from '../../components/ui'
+import { useProfile } from '../../db/hooks'
 import { MLink } from '../../components/MLink'
 import { activityId } from '../../lib/daily'
-import { dayKey, formatMediumDate, fromDayKey } from '../../lib/dates'
+import { dayKey, daysAgo, formatMediumDate, fromDayKey } from '../../lib/dates'
+import { stepRamp } from '../../lib/joints'
 import { haptic } from '../../lib/haptics'
 import { parseHealthExport, RUN_SHORTCUT } from '../../lib/healthImport'
 import { useBack } from '../../lib/nav'
@@ -21,6 +24,14 @@ export function StepsLogPage() {
   const back = useBack('/', 'sheet-down')
   const [day, setDay] = useState(params.get('date') ?? dayKey(Date.now()))
   const [form, setForm] = useState<{ steps: string; minutes: string; km: string; existing: boolean }>()
+  const goal = useProfile()?.stepsTarget
+  // Daily average over the last 7 days (not today, which isn't over yet)
+  const average = useLiveQuery(async () => {
+    const days = await db.activity.where('date').between(dayKey(daysAgo(7)), dayKey(Date.now())).toArray()
+    const steps = days.flatMap((a) => (a.deletedAt || !a.steps ? [] : [a.steps]))
+    return steps.length ? Math.round(steps.reduce((x, y) => x + y, 0) / steps.length) : undefined
+  }, [])
+  const ramp = stepRamp(average, goal)
 
   // Load whatever is already logged for the chosen day, so this edits rather than duplicates.
   useEffect(() => {
@@ -84,6 +95,11 @@ export function StepsLogPage() {
           <a className="btn btn-soft whitespace-nowrap" href={RUN_SHORTCUT}><Play size={17} /> Get from Health</a>
           <button type="button" className="btn btn-soft" onClick={paste}><ClipboardPaste size={17} /> Paste</button>
         </div>
+        {ramp && (
+          <p className="section-footer" data-testid="step-ramp">
+            This week, aim for about <span className="font-semibold text-ink">{ramp.toLocaleString()}</span> a day — a little more than your recent average of {average!.toLocaleString()}, building up to {goal!.toLocaleString()}. Walking, cycling and swimming are easiest on backs and knees.
+          </p>
+        )}
         <p className="section-footer">Tap Get from Health, come back, then Paste. First time? <MLink to="/settings/health" className="text-accent">Set it up once</MLink> (2 minutes).</p>
       </div>
 

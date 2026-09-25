@@ -34,6 +34,7 @@ const TABLE_LABELS: Record<DataTable, string> = {
   sleep: 'Sleep',
   activity: 'Activity',
   foods: 'My Foods',
+  checkins: 'Check-ins',
 }
 
 const TILE_INSET = '3.625rem'

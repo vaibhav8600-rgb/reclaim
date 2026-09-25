@@ -6,6 +6,7 @@ import { factKey, factValue } from './facts'
 import { qualityLabel, sleepHours } from './daily'
 import { dailyTotals } from './nutrition'
 import { adjustments, candidates } from './plan'
+import { checkInTrend } from './checkin'
 import { reachLabel, reachTrend } from './reach'
 import { itemDone, settledByMorning, startOfWeek, weeklyAdherence } from './rehab'
 
@@ -67,6 +68,9 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
   const exerciseName = new Map(exercises.map((e) => [e.id, e.name]))
   const liveSymptoms = symptoms.filter(inScope)
   const liveMeals = meals.filter(alive)
+  // Weekly check-ins, over all time: function changes over weeks, not within the period
+  const checkins = (await db.checkins.toArray()).filter(alive).sort((a, b) => a.recordedAt - b.recordedAt)
+  const fn = checkInTrend(checkins)
 
   const pain = injuries
     .filter((i) => alive(i) && (!injuryId || i.id === injuryId))
@@ -127,6 +131,10 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
       latest: { date: dayKey(ms[ms.length - 1].recordedAt), value: ms[ms.length - 1].value },
       readings: ms.length,
     })),
+    // PEG 0–10 (lower is better), own activities PSFS 0–10 (higher is better), minutes before sitting/walking hurts, nights woken a week
+    everydayFunction: checkins.length
+      ? { checkIns: checkins.length, since: fn.peg ? dayKey(fn.peg.since) : undefined, painAndInterference: fn.peg, ownActivities: fn.psfs, sittingMinutes: fn.sit, walkingMinutes: fn.walk, nightsWokenPerWeek: fn.nights, activities: checkins.at(-1)?.activities }
+      : undefined,
     rehab: livePlan.length
       ? {
           exercisesInPlan: livePlan.map((p) => exerciseName.get(p.exerciseId)),

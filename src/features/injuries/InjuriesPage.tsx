@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { MLink } from '../../components/MLink'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Bandage, ChevronRight, FolderHeart, HeartPulse, Plus } from 'lucide-react'
+import { Bandage, ChevronRight, ClipboardCheck, FolderHeart, HeartPulse, Plus } from 'lucide-react'
 import { db, type Injury, type InjuryStatus } from '../../db/db'
 import { isOpenInjury, useDocuments, useInjuries } from '../../db/hooks'
 import { alive } from '../../db/repo'
@@ -27,6 +27,7 @@ export function InjuriesPage() {
         <Group inset="3.625rem">
           <Row icon={<IconTile icon={HeartPulse} color="pink" />} title="Health Profile" value={toReview ? `${toReview} to review` : undefined} to="/health" />
           <Row icon={<IconTile icon={FolderHeart} color="indigo" />} title="Medical Records" value={documents?.length || undefined} to="/documents" />
+          <Row icon={<IconTile icon={ClipboardCheck} color="green" />} title="How You’re Doing" subtitle="Weekly check-ins: sitting, walking, sleep, activities" to="/progress" />
         </Group>
       </Section>
       <Section className="mb-5">
