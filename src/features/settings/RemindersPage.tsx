@@ -19,13 +19,15 @@ export function RemindersPage() {
     if (GOOGLE_CLIENT_ID) prepareGoogle().catch(() => undefined)
   }, [supported])
 
-  const blocker = !VAPID_PUBLIC_KEY || !GOOGLE_CLIENT_ID
-    ? 'Reminders aren’t set up on this server yet (docs/PUSH_SETUP.md).'
-    : isIOS() && !isStandalone()
-      ? 'Add Reclaim to your Home Screen first — iPhone only sends notifications to Home Screen apps. Tap Share, then “Add to Home Screen”, and open it from there.'
-      : !supported
-        ? 'This browser can’t receive reminders.'
-        : undefined
+  const blocker = !VAPID_PUBLIC_KEY
+    ? 'This version of Reclaim was built without the reminders key. In Vercel → Settings → Environment Variables, add VITE_VAPID_PUBLIC_KEY for Production, then redeploy (the key is built into the app). Then close and reopen Reclaim so it picks up the new version.'
+    : !GOOGLE_CLIENT_ID
+      ? 'Reminders use Google sign-in, which isn’t set up yet (docs/GOOGLE_SETUP.md).'
+      : isIOS() && !isStandalone()
+        ? 'Add Reclaim to your Home Screen first — iPhone only sends notifications to Home Screen apps. Tap Share, then “Add to Home Screen”, and open it from there.'
+        : !supported
+          ? 'This browser can’t receive reminders.'
+          : undefined
 
   async function run(task: (token: string) => Promise<void>) {
     const token = cachedToken()

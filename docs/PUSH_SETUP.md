@@ -53,6 +53,16 @@ Then **redeploy** (the public key is built into the app).
 
 Turning it off (or deleting the app) removes the device; expired subscriptions are also dropped on the next daily run.
 
+## If it says reminders aren't set up
+
+- **On the Reminders screen, right away** ("built without the reminders key"): the app was built before
+  `VITE_VAPID_PUBLIC_KEY` was added, or the variable isn't enabled for **Production**. Add it, **redeploy**, then
+  close Reclaim completely and open it again (the Home Screen app updates on the next open).
+- **After tapping the switch** ("Missing in Vercel (Production): …"): the message names exactly what the server
+  doesn't have. If it's the Redis one, check Upstash is connected to this project for Production; any prefix chosen
+  when connecting works (e.g. `REMINDERS_KV_REST_API_URL`). Environment-variable changes only take effect after a
+  **redeploy**.
+
 ## Checking the daily run
 
 Vercel → your project → **Settings → Cron Jobs** lists the job and lets you **Run** it now. Its log shows
