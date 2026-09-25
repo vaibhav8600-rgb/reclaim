@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { ClipboardList, Dumbbell, Flame, Library, Plus } from 'lucide-react'
 import { useExerciseMap, useInjuryMap, useMeta, usePrescriptions, useSessions } from '../../db/hooks'
 import { ENTRY_INSET, EntryRow } from '../../components/EntryRow'
@@ -6,6 +7,9 @@ import { EmptyState, GlassButton, Group, IconTile, NavBar, Row, Section } from '
 import { FLARE_KEY, type Flare } from '../../lib/rehab'
 import { PlanRow, WeekCard } from './components'
 import { FlareCard, startFlare } from './recovery'
+
+// Loaded with the page, not the app: the fitness safety notes aren't needed at start-up.
+const Workouts = lazy(() => import('./WorkoutsSection').then((m) => ({ default: m.Workouts })))
 
 export function RehabPage() {
   const prescriptions = usePrescriptions()
@@ -74,6 +78,10 @@ export function RehabPage() {
         </>
       )}
 
+      <Suspense fallback={null}>
+        <Workouts />
+      </Suspense>
+
       {sessions.length > 0 && (
         <Section prominent title="Recent Sessions" action={<MLink to="/timeline" className="text-accent">Show All</MLink>}>
           <Group inset={ENTRY_INSET}>
@@ -92,3 +100,4 @@ export function RehabPage() {
     </div>
   )
 }
+

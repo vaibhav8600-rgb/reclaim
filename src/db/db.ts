@@ -1,6 +1,6 @@
 import { Dexie, type Table } from 'dexie'
 import type { ExtractedFact, FACT_FLAGS, FACT_KINDS } from '../../shared/ai'
-import { STARTER_EXERCISES } from '../lib/exercises'
+import { FITNESS_EXERCISES, STARTER_EXERCISES } from '../lib/exercises'
 
 /** Where a value came from. AI values stay `ai_estimate` until the user confirms them. */
 export type Source = 'user' | 'user_confirmed' | 'ai_estimate' | 'clinician' | 'device' | 'imported'
@@ -97,6 +97,16 @@ export interface Exercise extends Base {
   instructions?: string
   /** Part of the starter library (fixed id), rather than added by the user. */
   builtin?: boolean
+  /** General fitness (not rehab): strength, cardio or mobility. Rehab exercises have none. */
+  category?: 'strength' | 'cardio' | 'mobility'
+}
+
+/** A saved workout: the exercises with their sets, reps or seconds, and weight, and the rest between sets. */
+export interface Workout extends Base {
+  name: string
+  items: { exerciseId: string; sets: number; target: number; load?: number }[]
+  /** Seconds of rest after each set */
+  restSeconds: number
 }
 
 /** An exercise in the user's plan, as their clinician prescribed it. */
@@ -139,6 +149,13 @@ export interface RehabSession extends Base {
   painAfter?: number
   /** 0–10, asked the morning after: has the pain settled? (pain-monitoring model) */
   morningPain?: number
+  /** A workout (fitness), not rehab: kept out of rehab adherence. */
+  kind?: 'workout'
+  workoutId?: string
+  /** The workout's name at the time */
+  name?: string
+  /** How hard it felt overall, 1–10 (rate of perceived exertion) */
+  effort?: number
   items: SessionItem[]
   notes?: string
   source: Source
@@ -349,6 +366,7 @@ export const db = new Dexie('reclaim') as Dexie & {
   activity: Table<Activity, string>
   foods: Table<CustomFood, string>
   checkins: Table<CheckIn, string>
+  workouts: Table<Workout, string>
   meta: Table<Meta, string>
 }
 
@@ -397,10 +415,14 @@ db.version(8).stores({
   checkins: 'id, recordedAt, updatedAt',
 })
 
+db.version(9)
+  .stores({ workouts: 'id, updatedAt' })
+  .upgrade((tx) => tx.table('exercises').bulkPut(FITNESS_EXERCISES))
+
 db.on('populate', (tx) => {
-  tx.table('exercises').bulkAdd(STARTER_EXERCISES)
+  tx.table('exercises').bulkAdd([...STARTER_EXERCISES, ...FITNESS_EXERCISES])
 })
 
 /** Tables included in backups and future sync. */
-export const DATA_TABLES = ['profile', 'injuries', 'symptoms', 'measurements', 'journal', 'exercises', 'prescriptions', 'sessions', 'documents', 'meals', 'savedMeals', 'facts', 'water', 'sleep', 'activity', 'foods', 'checkins'] as const
+export const DATA_TABLES = ['profile', 'injuries', 'symptoms', 'measurements', 'journal', 'exercises', 'prescriptions', 'sessions', 'documents', 'meals', 'savedMeals', 'facts', 'water', 'sleep', 'activity', 'foods', 'checkins', 'workouts'] as const
 export type DataTable = (typeof DATA_TABLES)[number]

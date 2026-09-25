@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { sessionStats } from '../lib/rehab'
 import { MLink } from './MLink'
 import { Bandage, Dumbbell, Footprints, Moon, NotebookPen, Ruler, Utensils } from 'lucide-react'
 import type { Injury } from '../db/db'
@@ -49,6 +50,13 @@ export const EntryRow = memo(function EntryRow({ entry, injuries, hideInjury = f
       const s = entry.item
       const done = s.items.filter((i) => i.sets.some((x) => x.done)).length
       to = `/rehab/session?id=${s.id}`
+      if (s.kind === 'workout') {
+        const { minutes, volume } = sessionStats(s)
+        icon = <span className="flex w-9 justify-center"><IconTile icon={Dumbbell} color="blue" /></span>
+        title = s.name ?? 'Workout'
+        detail = [`${minutes} min`, volume > 0 && `${volume.toLocaleString()} kg lifted`, s.effort && `effort ${s.effort}/10`].filter(Boolean).join(' · ')
+        break
+      }
       icon = <span className="flex w-9 justify-center"><IconTile icon={Dumbbell} color="green" /></span>
       title = 'Rehab Session'
       detail = [

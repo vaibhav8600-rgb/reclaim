@@ -30,6 +30,7 @@ const LibraryPage = page(() => import('./features/rehab/LibraryPage'), 'LibraryP
 const ExerciseDetailPage = page(() => import('./features/rehab/ExerciseDetailPage'), 'ExerciseDetailPage')
 const ExerciseFormPage = page(() => import('./features/rehab/ExerciseFormPage'), 'ExerciseFormPage')
 const PrescriptionFormPage = page(() => import('./features/rehab/PrescriptionFormPage'), 'PrescriptionFormPage')
+const WorkoutFormPage = page(() => import('./features/rehab/WorkoutFormPage'), 'WorkoutFormPage')
 const SessionPage = page(() => import('./features/rehab/SessionPage'), 'SessionPage')
 const DocumentsPage = page(() => import('./features/documents/DocumentsPage'), 'DocumentsPage')
 const DocumentDetailPage = page(() => import('./features/documents/DocumentDetailPage'), 'DocumentDetailPage')
@@ -114,6 +115,8 @@ export function App() {
           <Route path="rehab/session" element={<SessionPage />} />
           <Route path="rehab/plan/new" element={<PrescriptionFormPage />} />
           <Route path="rehab/plan/:id/edit" element={<PrescriptionFormPage />} />
+          <Route path="rehab/workouts/new" element={<WorkoutFormPage />} />
+          <Route path="rehab/workouts/:id" element={<WorkoutFormPage />} />
           <Route path="rehab/exercises/new" element={<ExerciseFormPage />} />
           <Route path="rehab/exercises/:id/edit" element={<ExerciseFormPage />} />
           <Route path="documents/new" element={<DocumentFormPage />} />

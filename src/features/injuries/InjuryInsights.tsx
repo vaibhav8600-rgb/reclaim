@@ -44,7 +44,7 @@ export function Patterns({ injuryId: id }: { injuryId: string }) {
       db.sessions.where('recordedAt').aboveOrEqual(from - 86_400_000).toArray(),
     ])
     const own = pain.filter((s) => !s.deletedAt && s.injuryId === id && s.type === 'pain')
-    return own.length ? painPatterns({ pain: own, steps: steps.filter((a) => !a.deletedAt), sleep: sleep.filter((s) => !s.deletedAt), sessions: sessions.filter((s) => !s.deletedAt) }) : null
+    return own.length ? painPatterns({ pain: own, steps: steps.filter((a) => !a.deletedAt), sleep: sleep.filter((s) => !s.deletedAt), sessions: sessions.filter((s) => !s.deletedAt && s.kind !== 'workout') }) : null
   }, [id])
 
   if (!patterns) return null

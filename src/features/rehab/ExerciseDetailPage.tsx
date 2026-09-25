@@ -10,6 +10,7 @@ import { GlassButton, Group, NavBar, Row, Section } from '../../components/ui'
 import { formatShortDate } from '../../lib/dates'
 import { exerciseProgress, formatFrequency, formatTarget } from '../../lib/rehab'
 import { AdjustNotes } from './AdjustNotes'
+import { bestsFor } from '../../lib/fitness'
 import { ExerciseAnimation, hasAnimation } from './ExerciseAnimation'
 
 export function ExerciseDetailPage() {
@@ -31,6 +32,7 @@ export function ExerciseDetailPage() {
   const max = niceMax(Math.max(...recent.map((p) => p.value), 1))
   const first = recent[0]
   const last = recent[recent.length - 1]
+  const bests = bestsFor(sessions!, id)
 
   return (
     <div className="space-y-7 pb-4">
@@ -95,6 +97,15 @@ export function ExerciseDetailPage() {
           </div>
         </div>
       </Section>
+
+      {(bests.heaviest || bests.most) && (
+        <Section title="Personal Bests">
+          <Group>
+            {bests.heaviest && <Row title="Heaviest" value={<span data-testid="best-heaviest">{bests.heaviest} kg</span>} />}
+            {bests.most && <Row title={exercise.category === 'cardio' ? 'Longest' : exercise.mode === 'time' ? 'Longest hold' : 'Most reps in a set'} value={exercise.category === 'cardio' ? `${Math.round(bests.most / 60)} min` : `${bests.most}${exercise.mode === 'time' ? ' s' : ''}`} />}
+          </Group>
+        </Section>
+      )}
     </div>
   )
 }

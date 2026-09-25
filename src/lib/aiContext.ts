@@ -9,7 +9,7 @@ import { adjustments, candidates } from './plan'
 import { checkInTrend } from './checkin'
 import { painPatterns } from './patterns'
 import { reachLabel, reachTrend } from './reach'
-import { itemDone, settledByMorning, startOfWeek, weeklyAdherence } from './rehab'
+import { isRehab, itemDone, sessionStats, settledByMorning, startOfWeek, weeklyAdherence } from './rehab'
 
 /**
  * A compact, privacy-minded summary of the log for the AI: only what a task needs,
@@ -92,7 +92,7 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
         averageByTimeOfDay: { morning: byTime(5, 12), afternoon: byTime(12, 17), evening: byTime(17, 24) },
         daily: [...byDay].sort().map(([date, v]) => ({ date, avg: avg(v), logs: v.length })),
         // Differences in this pain by steps, sleep and rehab the day before (at least 5 days each side, 1+ point)
-        patterns: painPatterns({ pain: logs, steps: activity.filter(alive), sleep: sleeps.filter(alive), sessions: sessions.filter(alive) }).found.map((p) => p.text),
+        patterns: painPatterns({ pain: logs, steps: activity.filter(alive), sleep: sleeps.filter(alive), sessions: sessions.filter((s) => alive(s) && isRehab(s)) }).found.map((p) => p.text),
         // Back or neck: how far down the leg or arm symptoms reach, and whether that's moving back towards the spine
         reach: (() => {
           const r = liveSymptoms.filter((s) => s.injuryId === i.id && s.reach !== undefined).sort((a, b) => a.recordedAt - b.recordedAt)
@@ -117,7 +117,8 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
   }
 
   const livePlan = prescriptions.filter((p) => alive(p) && p.active && (!injuryId || p.injuryId === injuryId))
-  const liveSessions = sessions.filter((s) => alive(s) && s.recordedAt >= from)
+  const liveSessions = sessions.filter((s) => alive(s) && isRehab(s) && s.recordedAt >= from)
+  const workouts = sessions.filter((s) => alive(s) && !isRehab(s) && s.recordedAt >= from)
   const week = weeklyAdherence(livePlan, sessions.filter(alive), now)
   const lastWeek = weeklyAdherence(livePlan, sessions.filter(alive), startOfWeek(now) - DAY)
 
@@ -137,6 +138,15 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
     // PEG 0–10 (lower is better), own activities PSFS 0–10 (higher is better), minutes before sitting/walking hurts, nights woken a week
     everydayFunction: checkins.length
       ? { checkIns: checkins.length, since: fn.peg ? dayKey(fn.peg.since) : undefined, painAndInterference: fn.peg, ownActivities: fn.psfs, sittingMinutes: fn.sit, walkingMinutes: fn.walk, nightsWokenPerWeek: fn.nights, activities: checkins.at(-1)?.activities }
+      : undefined,
+    // Fitness workouts (not rehab): how often, how long, how hard
+    workouts: workouts.length
+      ? {
+          count: workouts.length,
+          totalMinutes: workouts.reduce((n, w) => n + sessionStats(w).minutes, 0),
+          averageEffort: avg(workouts.flatMap((w) => (w.effort ? [w.effort] : []))),
+          workouts: [...new Set(workouts.map((w) => w.name).filter(Boolean))],
+        }
       : undefined,
     rehab: livePlan.length
       ? {
