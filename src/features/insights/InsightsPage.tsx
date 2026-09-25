@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileText } from 'lucide-react'
+import { CalendarRange, FileText } from 'lucide-react'
 import type { AiOutput } from '../../../shared/ai'
 import { useMeta } from '../../db/hooks'
 import { setMeta } from '../../db/repo'
@@ -54,6 +54,12 @@ export function InsightsPage() {
   return (
     <div className="space-y-7 pb-4">
       <NavBar title="Insights" back="/" />
+
+      <Section>
+        <Group inset="3.625rem">
+          <Row icon={<IconTile icon={CalendarRange} color="blue" />} title="Your Week" subtitle="Every area, against the week before" to="/week" />
+        </Group>
+      </Section>
 
       <Section prominent title="This Week">
         {writingSummary ? (

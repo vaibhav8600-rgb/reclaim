@@ -8,12 +8,12 @@ import { seedDemo } from './helpers'
  */
 const screens: [name: string, path: string, heading: string, fullPage?: false][] = [
   ['today', '/', 'Today'],
-  ['rehab', '/rehab', 'Rehab'],
+  ['rehab', '/rehab', 'Exercise'],
   ['session', '/rehab/session', 'Rehab Session'],
   ['library', '/rehab/library', 'Exercise Library', false],
   ['exercise', '/rehab/exercises/ex-wrist-ext-ecc', 'Eccentric wrist extension'],
   ['timeline', '/timeline', 'Timeline', false], // months of history: too tall for a full-page capture
-  ['injuries', '/injuries', 'Injuries'],
+  ['injuries', '/injuries', 'Health'],
   ['injury', `/injuries/${IDS.elbow}`, 'Tennis elbow'],
   ['symptom-form', '/log/symptom', 'Log Symptom'],
   ['nutrition', '/nutrition', 'Nutrition'],
@@ -23,6 +23,7 @@ const screens: [name: string, path: string, heading: string, fullPage?: false][]
   ['safety', '/safety', 'Warning Signs'],
   ['checkin', '/checkin', 'Weekly Check-in'],
   ['progress', '/progress', 'How You’re Doing'],
+  ['week', '/week', 'Your Week'],
   ['weight', '/weight', 'Weight'],
   ['sleep-form', '/log/sleep', 'Sleep'],
   ['steps-form', '/log/steps', 'Steps & Activity'],

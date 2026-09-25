@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { dailyTotals } from '../../lib/nutrition'
-import { Printer, Sparkles } from 'lucide-react'
+import { Paperclip, Printer, Sparkles } from 'lucide-react'
 import type { AiOutput } from '../../../shared/ai'
 import { db } from '../../db/db'
 import { isOpenInjury, useInjuries, useProfile } from '../../db/hooks'
@@ -18,6 +18,8 @@ import { checkInTrend, toleranceLabel } from '../../lib/checkin'
 import { medicineList } from '../../lib/facts'
 import { reachLabel, reachTrend } from '../../lib/reach'
 import { itemDone, plannedPerWeek, startOfWeek } from '../../lib/rehab'
+import { documentBlob } from '../../lib/sync'
+import { toast } from '../../lib/toast'
 import { dailySeries } from '../../lib/stats'
 import { kindOf } from '../documents/kinds'
 
@@ -121,6 +123,27 @@ export function ReportPage() {
   const proteinAvg = mealDays.length ? Math.round(mealDays.reduce((a, d) => a + d.protein, 0) / mealDays.length) : undefined
   const goal = profile?.proteinTarget
 
+  /** The attached records' own files (PDFs and photos), to send with the report. */
+  async function shareRecords() {
+    const files: File[] = []
+    for (const d of data!.documents) {
+      try {
+        const blob = await documentBlob(d)
+        const ext = d.fileName.match(/\.[a-z0-9]{2,5}$/i)?.[0] ?? ''
+        files.push(new File([blob], `${d.date} ${d.title.replace(/[\\/:*?"<>|]+/g, '-')}${ext}`, { type: blob.type }))
+      } catch {
+        // only in Drive and not signed in: skipped
+      }
+    }
+    if (!files.length) return toast('These records’ files aren’t on this iPhone yet — open them once to download.')
+    if (!navigator.canShare?.({ files })) return toast('This browser can’t share files. Open each record and share it from there.')
+    try {
+      await navigator.share({ files, title: `${injury!.name}: records` })
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError') toast('Couldn’t open the share sheet.')
+    }
+  }
+
   async function generate() {
     setWriting(true)
     try {
@@ -143,7 +166,12 @@ export function ReportPage() {
               <Printer size={18} /> Print or PDF
             </button>
           </div>
-          <p className="section-footer !px-1">On iPhone: Print, then pinch out on the preview and Share to save it as a PDF.</p>
+          {data && data.documents.length > 0 && (
+            <button type="button" className="btn btn-soft w-full" onClick={shareRecords}>
+              <Paperclip size={18} /> Share the {data.documents.length === 1 ? 'Record' : `${data.documents.length} Records`}
+            </button>
+          )}
+          <p className="section-footer !px-1">On iPhone: Print, then pinch out on the preview and Share to save it as a PDF. The records themselves are listed under Attachments; Share sends their files too.</p>
         </Section>
       </div>
 
@@ -271,15 +299,15 @@ export function ReportPage() {
         )}
 
         {data.documents.length > 0 && (
-          <ReportSection title="Documents">
-            <ul className="space-y-1.5 text-[0.9375rem]">
+          <ReportSection title={`Attachments (${data.documents.length} ${data.documents.length === 1 ? 'record' : 'records'})`}>
+            <ol className="list-decimal space-y-1.5 pl-5 text-[0.9375rem]" data-testid="attachments">
               {data.documents.map((d) => (
                 <li key={d.id}>
                   <span className="font-semibold">{d.title}</span> — {kindOf(d.kind).label}, {formatMediumDate(fromDayKey(d.date))}
                   {d.aiSummary && <span className="text-muted"> · AI summary: {d.aiSummary.summary}</span>}
                 </li>
               ))}
-            </ul>
+            </ol>
           </ReportSection>
         )}
 

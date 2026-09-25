@@ -19,17 +19,17 @@ async function recordMotions(page: Page, action: () => Promise<void>) {
 test('tabs, push and back navigation', async ({ page }) => {
   await seedDemo(page)
   await page.goto('/')
-  for (const [name, heading] of [['Rehab', 'Rehab'], ['Timeline', 'Timeline'], ['Injuries', 'Injuries'], ['Today', 'Today']] as const) {
+  for (const [name, heading] of [['Exercise', 'Exercise'], ['Timeline', 'Timeline'], ['Health', 'Health'], ['Today', 'Today']] as const) {
     await tab(page, name).click()
     await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible()
     await expect(tab(page, name)).toHaveClass(/text-accent/)
   }
 
-  await tab(page, 'Injuries').click()
+  await tab(page, 'Health').click()
   await page.getByRole('link', { name: /Tennis elbow/ }).click()
   await expect(page.getByRole('heading', { name: 'Tennis elbow', level: 1 })).toBeVisible()
   await page.getByRole('button', { name: 'Back', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Injuries', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Health', level: 1 })).toBeVisible()
 
   await tab(page, 'Today').click()
   await page.getByRole('link', { name: 'Profile and settings' }).click()
@@ -73,12 +73,12 @@ test('navigation uses iOS motion: push, pop, tab, sheet up and down', async ({ p
   await importBackup(page, injuriesBackup('Tennis elbow'))
   await page.goto('/')
 
-  expect(await recordMotions(page, () => tab(page, 'Injuries').click())).toContain('tab')
+  expect(await recordMotions(page, () => tab(page, 'Health').click())).toContain('tab')
   expect(await recordMotions(page, () => page.getByRole('link', { name: /Tennis elbow/ }).click())).toContain('push')
   expect(await recordMotions(page, () => page.getByRole('link', { name: 'Edit injury' }).click())).toContain('sheet-up')
   expect(await recordMotions(page, () => page.getByRole('button', { name: 'Cancel' }).click())).toContain('sheet-down')
   expect(await recordMotions(page, () => page.getByRole('button', { name: 'Back', exact: true }).click())).toContain('pop')
-  await expect(page.getByRole('heading', { name: 'Injuries', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Health', level: 1 })).toBeVisible()
 })
 
 test('Reduce Motion turns navigation animation off', async ({ page }) => {
