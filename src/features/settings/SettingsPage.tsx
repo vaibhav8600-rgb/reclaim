@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Camera, Cloud, Download, FileUp, HardDrive, Heart, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Target, Trash2 } from 'lucide-react'
+import { Bell, Camera, Cloud, Download, FileUp, HardDrive, Heart, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Target, Trash2 } from 'lucide-react'
 import type { AiHealth } from '../../../shared/ai'
 import { AiConsentSheet } from '../../components/ai'
 import { aiHealth, setAiConsent, type AiConsent } from '../../lib/ai'
@@ -53,6 +53,7 @@ export function SettingsPage() {
         <Group inset={TILE_INSET}>
           <Row icon={<IconTile icon={Target} color="orange" />} title="Goals" subtitle="Calories, protein, water, steps, sleep and weight" to="/goals" />
           <Row icon={<IconTile icon={Heart} color="pink" />} title="Apple Health" subtitle="Bring in your steps" to="/settings/health" />
+          <Row icon={<IconTile icon={Bell} color="orange" />} title="Reminders" subtitle="A daily nudge in the evening" to="/settings/reminders" />
         </Group>
       </Section>
       <AppearanceSection />

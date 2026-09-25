@@ -2,6 +2,7 @@ import { AI_TASKS, inputs, MAX_REQUEST_BYTES, outputs, type AiHealth, type AiTas
 import { geminiProvider, ModelBusyError, ModelError, modelsFromEnv, type Provider } from './gemini.ts'
 import { GROQ_MODELS, groqProvider, withBackup } from './groq.ts'
 import { buildPrompt, SYSTEM } from './prompts.ts'
+import { authFromEnv, authorize, json, type AuthDeps } from '../auth.ts'
 
 /**
  * POST /api/ai — run one AI task for the app's owner.
@@ -11,18 +12,11 @@ import { buildPrompt, SYSTEM } from './prompts.ts'
  * GET /api/ai — { configured, model } so the app can show whether AI is set up (no auth, no secrets).
  */
 
-export interface Deps {
+export interface Deps extends Omit<AuthDeps, 'verified'> {
   provider?: Provider
-  clientId?: string
-  allowedEmails: string[]
-  verifyToken(token: string): Promise<{ aud?: string; azp?: string; email?: string; email_verified?: string | boolean } | undefined>
-  now?: () => number
   /** Rate-limit and token caches. Shared per server instance by default; tests pass fresh ones. */
   state?: { hits: Map<string, number[]>; verified: Map<string, { email: string; until: number }> }
 }
-
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } })
 
 const RATE_LIMIT = 40 // requests
 const RATE_WINDOW = 10 * 60_000 // per 10 minutes, per user (per server instance)
@@ -40,19 +34,9 @@ export async function handleAi(req: Request, deps: Deps): Promise<Response> {
   }
 
   // Who's asking
-  const token = /^Bearer (.+)$/.exec(req.headers.get('authorization') ?? '')?.[1]
-  if (!token) return json(401, { error: 'Sign in with Google to use AI.' })
-  const cached = verified.get(token)
-  let email = cached && cached.until > now ? cached.email : undefined
-  if (!email) {
-    for (const [t, v] of verified) if (v.until <= now) verified.delete(t)
-    const info = await deps.verifyToken(token).catch(() => undefined)
-    if (!info || (info.aud !== deps.clientId && info.azp !== deps.clientId)) return json(401, { error: 'Your Google sign-in has expired. Sign in again.' })
-    if (!info.email || !(info.email_verified === true || info.email_verified === 'true')) return json(403, { error: 'This Google account has no verified email.' })
-    email = info.email.toLowerCase()
-    verified.set(token, { email, until: now + 5 * 60_000 })
-  }
-  if (!deps.allowedEmails.includes(email)) return json(403, { error: `${email} isn’t allowed to use AI on this server (AI_ALLOWED_EMAILS).` })
+  const who = await authorize(req, { ...deps, verified }, 'AI')
+  if (who instanceof Response) return who
+  const { email } = who
 
   // Rate limit
   const recent = (hits.get(email) ?? []).filter((t) => t > now - RATE_WINDOW)
@@ -118,13 +102,5 @@ export async function handleAi(req: Request, deps: Deps): Promise<Response> {
 export function depsFromEnv(env: Record<string, string | undefined>): Deps {
   const gemini = env.GEMINI_API_KEY ? geminiProvider(env.GEMINI_API_KEY, modelsFromEnv(env.GEMINI_MODEL)) : undefined
   const groq = env.GROQ_API_KEY ? groqProvider(env.GROQ_API_KEY, modelsFromEnv(env.GROQ_MODEL, GROQ_MODELS)) : undefined
-  return {
-    provider: gemini && groq ? withBackup(gemini, groq) : (gemini ?? groq),
-    clientId: env.VITE_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID,
-    allowedEmails: (env.AI_ALLOWED_EMAILS ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
-    async verifyToken(token) {
-      const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(token)}`)
-      return r.ok ? r.json() : undefined
-    },
-  }
+  return { provider: gemini && groq ? withBackup(gemini, groq) : (gemini ?? groq), ...authFromEnv(env) }
 }
