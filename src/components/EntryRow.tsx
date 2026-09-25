@@ -7,6 +7,7 @@ import { injuryPlace, kindInfo, sideLabel, symptomLabel, statusLabel } from '../
 import { formatTime } from '../lib/dates'
 import { formatHours, qualityLabel, sleepHours } from '../lib/daily'
 import { grams, slotLabel } from '../lib/nutrition'
+import { reachLabel } from '../lib/reach'
 import { IconTile, SeverityBadge } from './ui'
 import { DocumentTile, kindOf } from '../features/documents/kinds'
 
@@ -24,7 +25,8 @@ export const EntryRow = memo(function EntryRow({ entry, injuries, hideInjury = f
       to = `/log/symptom?id=${s.id}`
       icon = <SeverityBadge value={s.severity} />
       title = symptomLabel(s.type)
-      detail = [injuryName(s.injuryId), s.trigger, s.notes].filter(Boolean).join(' · ')
+      const reach = reachLabel(s.injuryId ? injuries.get(s.injuryId)?.bodyRegion : undefined, s.reach)
+      detail = [injuryName(s.injuryId), reach && `Reaches: ${reach}`, s.trigger, s.notes].filter(Boolean).join(' · ')
       break
     }
     case 'measurement': {

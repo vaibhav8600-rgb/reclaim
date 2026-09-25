@@ -17,6 +17,7 @@ import { useGo } from '../../lib/nav'
 import { clampDose, dailyTargets, weeklyCheck, type Check } from '../../lib/plan'
 import { formatFrequency, formatTarget } from '../../lib/rehab'
 import { toast } from '../../lib/toast'
+import { AdjustNotes } from '../rehab/AdjustNotes'
 import { ExerciseAnimation } from '../rehab/ExerciseAnimation'
 import { InjurySuggestions } from '../health/InjurySuggestions'
 
@@ -164,6 +165,7 @@ export function PlanPage() {
                         {i.why && <p className="mt-2 text-[0.9375rem]">{i.why}</p>}
                         <p className="mt-2 text-[0.875rem] text-muted"><span className="font-semibold">Progress: </span>{i.guide.progression}</p>
                         {i.guide.caution && <p className="mt-1 text-[0.875rem] text-muted"><span className="font-semibold">Note: </span>{i.guide.caution}</p>}
+                        <AdjustNotes exerciseId={i.exercise.id} injuries={open} className="mt-2" />
                         <p className="mt-2 text-[0.75rem] text-faint">Source: {i.guide.refs.map((r) => GUIDELINES[r].short).join(' · ')}</p>
                         {i.existing && <p className="mt-1 text-[0.75rem] text-faint">Already in your rehab plan — kept as it is.</p>}
                       </div>

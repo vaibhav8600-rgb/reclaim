@@ -9,6 +9,8 @@ import { Chips, Field, Group } from '../../components/ui'
 import { SYMPTOM_TYPES, TRIGGER_SUGGESTIONS, symptomLabel } from '../../lib/constants'
 import { haptic } from '../../lib/haptics'
 import { requestPersistence } from '../../lib/platform'
+import { limbOf, REACH_TYPES, reachScale } from '../../lib/reach'
+import { NERVE_SYMPTOMS } from '../../lib/safety'
 import { toast } from '../../lib/toast'
 import { DeleteRow, InjuryPicker, SheetForm, WhenRow } from './shared'
 
@@ -46,6 +48,9 @@ export function SymptomLogPage() {
   if (!loaded || !injuries) return null
   const set = <K extends keyof Symptom>(k: K, v: Symptom[K]) => setDraft((d) => ({ ...d, [k]: v }))
   const choices = injuries.filter((i) => isOpenInjury(i) || i.id === draft.injuryId)
+  const region = injuries.find((i) => i.id === draft.injuryId)?.bodyRegion
+  // Back and neck symptoms: how far down the leg or arm (only kept when it applies)
+  const scale = REACH_TYPES.includes(draft.type ?? '') ? reachScale(region) : undefined
 
   async function submit() {
     haptic()
@@ -55,6 +60,7 @@ export function SymptomLogPage() {
       severity: draft.severity!,
       injuryId: draft.injuryId,
       recordedAt: draft.recordedAt!,
+      reach: scale ? draft.reach : undefined,
       trigger: draft.trigger?.trim() || undefined,
       notes: draft.notes?.trim() || undefined,
       source: draft.source ?? 'user',
@@ -78,7 +84,18 @@ export function SymptomLogPage() {
       <div>
         <span className="section-label block">Symptom</span>
         <Chips options={SYMPTOM_TYPES} value={draft.type} onChange={(v) => set('type', v)} />
+        {NERVE_SYMPTOMS.includes(draft.type ?? '') && (
+          <p className="section-footer" data-testid="nerve-note">Numbness, tingling or weakness can be a warning sign. After you save, Today asks a few quick safety questions.</p>
+        )}
       </div>
+
+      {scale && (
+        <div>
+          <span className="section-label block">How Far Does It Reach?</span>
+          <Chips wrap options={scale.map((label, i) => ({ value: String(i), label }))} value={draft.reach === undefined ? undefined : String(draft.reach)} onChange={(v) => set('reach', draft.reach === Number(v) ? undefined : Number(v))} />
+          <p className="section-footer">Optional. Moving back towards the spine is usually a good sign; spreading further down the {limbOf(region)} is worth telling your physio.</p>
+        </div>
+      )}
 
       <div>
         <span className="section-label block">Intensity</span>

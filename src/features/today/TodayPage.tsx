@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router'
 import { MLink } from '../../components/MLink'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, ClipboardList, CloudDownload, CloudUpload, HeartPulse, Plus, Ruler, Smartphone, Sparkles, UserRound } from 'lucide-react'
+import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, ClipboardList, CloudDownload, CloudUpload, HeartPulse, Plus, Ruler, ShieldCheck, Smartphone, Sparkles, UserRound } from 'lucide-react'
 import { db } from '../../db/db'
 import { isOpenInjury, useEntries, useInjuries, useInjuryMap, useMeta, usePrescriptions, useProfile, useSymptomsSince } from '../../db/hooks'
 import { alive, setMeta } from '../../db/repo'
@@ -14,8 +14,10 @@ import { daysAgo, formatLongDate, relativeAge, startOfDay } from '../../lib/date
 import { GOOGLE_CLIENT_ID } from '../../lib/google'
 import { AtAGlance } from './AtAGlance'
 import { isIOS, isStandalone } from '../../lib/platform'
+import { NERVE_SYMPTOMS, SAFETY_CHECK_AT, safetyCheckDue } from '../../lib/safety'
 import { dailySeries, round1, windowAverage } from '../../lib/stats'
 import { WeekCard } from '../rehab/components'
+import { FlareCard, FlareSuggestion, MorningCheck } from '../rehab/recovery'
 import type { StoredSummary } from '../insights/InsightsPage'
 
 export function TodayPage() {
@@ -46,7 +48,7 @@ export function TodayPage() {
         }
       />
 
-      <Nudges hasData={injuries.length > 0} />
+      <Nudges hasData={injuries.length > 0} regions={open.map((i) => i.bodyRegion)} />
 
       {needsSetup && (
         <Section>
@@ -217,19 +219,35 @@ function LatestMeasurements() {
   )
 }
 
-/** Gentle nudges that protect the data: install to Home Screen, keep a backup. */
-function Nudges({ hasData }: { hasData: boolean }) {
+/** Gentle nudges that protect the person and the data: the warning-sign check, install to Home Screen, keep a backup. */
+function Nudges({ hasData, regions }: { hasData: boolean; regions: string[] }) {
   const dismissedInstall = useMeta<boolean>('dismissedInstall')
   const lastBackupAt = useMeta<number>('lastBackupAt')
   const firstEntryAt = useLiveQuery(async () => (await db.symptoms.orderBy('recordedAt').first())?.recordedAt, [])
   const toReview = useLiveQuery(async () => (await db.documents.toArray()).filter((d) => !d.deletedAt && d.aiSummary?.facts?.length && !d.aiSummary.reviewedAt).length, [])
 
+  const safetyCheckAt = useMeta<number>(SAFETY_CHECK_AT)
+  const lastNerveAt = useLiveQuery(async () => {
+    const recent = await db.symptoms.where('recordedAt').above(daysAgo(3)).toArray()
+    return Math.max(0, ...recent.filter((s) => !s.deletedAt && NERVE_SYMPTOMS.includes(s.type)).map((s) => s.recordedAt)) || undefined
+  }, [])
+  const safety = safetyCheckDue(regions, safetyCheckAt, lastNerveAt)
+
   const showInstall = isIOS() && !isStandalone() && dismissedInstall !== true
   const backupDue = hasData && firstEntryAt !== undefined && (lastBackupAt ?? firstEntryAt) < daysAgo(7)
 
-  if (!showInstall && !backupDue && !toReview) return null
+  if (!safety && !showInstall && !backupDue && !toReview) return null
   return (
     <Section className="space-y-3">
+      {safety && (
+        <Tip
+          icon={ShieldCheck}
+          color="orange"
+          title={safety === 'nerve' ? 'You logged numbness, tingling or weakness' : 'Weekly safety check'}
+          body="A few yes-or-no questions about warning signs that need a doctor. About 30 seconds."
+          to="/safety"
+        />
+      )}
       {showInstall && (
         <Tip
           icon={Smartphone}
@@ -261,24 +279,29 @@ function Nudges({ hasData }: { hasData: boolean }) {
   )
 }
 
-/** Rehab progress when there's a plan; a gentle prompt to add one otherwise. */
+/** Rehab: a flare-up or the morning-after check when there is one, then progress (or a prompt to add exercises). */
 function RehabToday({ hasInjuries }: { hasInjuries: boolean }) {
   const prescriptions = usePrescriptions()
   if (!prescriptions || !hasInjuries) return null
   return (
     <Section prominent title="Rehab" action={<MLink to="/rehab" className="text-accent">Plan</MLink>}>
-      {prescriptions.some((p) => p.active) ? (
-        <WeekCard compact />
-      ) : (
-        <MLink to="/rehab/library" className="card cell cell-press !py-4">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent"><Plus size={20} strokeWidth={2.4} /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-medium">Add your physio exercises</span>
-            <span className="block text-[0.875rem] text-muted">Track sets, reps and how your body responds.</span>
-          </span>
-          <ChevronRight size={18} className="text-faint" />
-        </MLink>
-      )}
+      <div className="space-y-3">
+        <FlareCard />
+        <FlareSuggestion />
+        <MorningCheck />
+        {prescriptions.some((p) => p.active) ? (
+          <WeekCard compact />
+        ) : (
+          <MLink to="/rehab/library" className="card cell cell-press !py-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent"><Plus size={20} strokeWidth={2.4} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">Add your physio exercises</span>
+              <span className="block text-[0.875rem] text-muted">Track sets, reps and how your body responds.</span>
+            </span>
+            <ChevronRight size={18} className="text-faint" />
+          </MLink>
+        )}
+      </div>
     </Section>
   )
 }

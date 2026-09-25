@@ -102,3 +102,31 @@ export interface SessionDraft {
 }
 
 export const DRAFT_KEY = 'sessionDraft'
+
+/**
+ * Had the pain settled by the next morning? At most 5/10, and no more than 1 above the pain before the session
+ * (Silbernagel 2007: pain the morning after shouldn't be worse than before). Undefined until it's been asked.
+ */
+export function settledByMorning(s: Pick<RehabSession, 'painBefore' | 'morningPain'>) {
+  if (s.morningPain === undefined) return undefined
+  return s.morningPain <= 5 && (s.painBefore === undefined || s.morningPain <= s.painBefore + 1)
+}
+
+/** Yesterday's sessions still waiting for their morning-after answer (asked all day today). */
+export function morningCheckDue(sessions: RehabSession[], now = Date.now()) {
+  const today = startOfDay(now)
+  const yesterday = startOfDay(today - 12 * 3_600_000) // safe across a daylight-saving change
+  return sessions.filter((s) => !s.deletedAt && s.recordedAt >= yesterday && s.recordedAt < today && s.morningPain === undefined)
+}
+
+/* ─────────── flare-up ─────────── */
+
+/** meta: a flare-up in progress. Sessions start at half the usual sets until it ends. */
+export const FLARE_KEY = 'flare'
+export interface Flare {
+  startedAt: number
+}
+/** Day 1 is the day it started. */
+export const flareDay = (f: Flare, now = Date.now()) => Math.round((startOfDay(now) - startOfDay(f.startedAt)) / 86_400_000) + 1
+/** A gentler session: half the usual sets (at least one), same reps or hold. */
+export const flareItems = (items: SessionItem[]) => items.map((i) => ({ ...i, sets: i.sets.slice(0, Math.max(1, Math.ceil(i.sets.length / 2))) }))

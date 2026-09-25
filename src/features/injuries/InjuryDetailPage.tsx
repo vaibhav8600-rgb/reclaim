@@ -14,6 +14,7 @@ import { PainChart } from '../../components/PainChart'
 import { GlassButton, Group, NavBar, PickerRow, Row, Section, Segmented } from '../../components/ui'
 import { INJURY_STATUSES, injuryPlace } from '../../lib/constants'
 import { daysAgo, daysBetween, formatMediumDate, fromDayKey } from '../../lib/dates'
+import { limbOf, reachLabel, reachScale, reachTrend } from '../../lib/reach'
 import { dailySeries, windowAverage } from '../../lib/stats'
 import { toast } from '../../lib/toast'
 
@@ -31,16 +32,22 @@ export function InjuryDetailPage() {
   const [range, setRange] = useState<(typeof RANGES)[number]['value']>('30')
   const days = Number(range)
   const symptoms = useSymptomsSince(daysAgo(days - 1), id)
+  // Any symptom type can say how far it reaches (pain, numbness, tingling…)
+  const reached = useLiveQuery(
+    async () => (await db.symptoms.where('recordedAt').aboveOrEqual(daysAgo(days - 1)).toArray()).filter((s) => !s.deletedAt && s.injuryId === id && s.reach !== undefined).sort((a, b) => b.recordedAt - a.recordedAt),
+    [id, days],
+  )
   const series = useMemo(() => (symptoms ? dailySeries(symptoms, days) : []), [symptoms, days])
   const recent = useEntries({ injuryId: id, limit: 10 })
   const plan = usePrescriptions()?.filter((p) => p.injuryId === id)
   const exercises = useExerciseMap()
   const documents = useDocuments(id)
 
-  if (injury === undefined || !symptoms || !recent) return null
+  if (injury === undefined || !symptoms || !recent || !reached) return null
   if (!injury || injury.deletedAt) return <NavBar title="Injury Not Found" back="/injuries" />
 
   const avg = windowAverage(symptoms, 0, Infinity)
+  const trend = reachTrend(reached)
   const dayN = daysBetween(fromDayKey(injury.startDate), Date.now()) + 1
 
   async function setStatus(status: InjuryStatus) {
@@ -93,6 +100,27 @@ export function InjuryDetailPage() {
           </div>
         </div>
       </Section>
+
+      {reachScale(injury.bodyRegion) && reached.length > 0 && (
+        <Section
+          prominent
+          title="How Far It Reaches"
+          footer={
+            trend === 'spreading' ? (
+              <>Reaching further down the {limbOf(injury.bodyRegion)} than before is worth telling your physio. <MLink to="/safety" className="text-accent">Check the warning signs</MLink>.</>
+            ) : trend === 'centralising' ? (
+              'Symptoms moving back towards the spine usually mean it’s settling.'
+            ) : (
+              `From symptoms logged with how far they reach, over ${days} days.`
+            )
+          }
+        >
+          <Group>
+            <Row title="Latest" value={reachLabel(injury.bodyRegion, reached[0].reach)} />
+            {trend && <Row title="Trend" value={<span data-testid="reach-trend">{{ spreading: 'Spreading further down', centralising: 'Moving back towards the spine', steady: 'About the same' }[trend]}</span>} />}
+          </Group>
+        </Section>
+      )}
 
       <Section>
         <div className="grid grid-cols-2 gap-3">

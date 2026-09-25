@@ -32,6 +32,7 @@ test('with Reduce Motion, the start and key positions are shown still, side by s
 
 test('every starter exercise has a demonstration; custom exercises simply don’t', async ({ page }, info) => {
   test.skip(info.project.name !== 'iphone-chromium', 'the same drawing code in every engine; one is enough for the full sweep')
+  test.setTimeout(90_000) // 24 screens in one test
   await page.emulateMedia({ reducedMotion: 'reduce' })
   for (const e of STARTER_EXERCISES) {
     await page.goto(`/rehab/exercises/${e.id}`)

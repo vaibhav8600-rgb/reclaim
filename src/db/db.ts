@@ -62,6 +62,8 @@ export interface Symptom extends Base {
   /** 0–10 */
   severity: number
   recordedAt: number
+  /** For a back or neck injury: how far down the leg or arm it reaches, 0 (spine only) to 4 (foot or hand). See lib/reach. */
+  reach?: number
   trigger?: string
   notes?: string
   source: Source
@@ -135,6 +137,8 @@ export interface RehabSession extends Base {
   injuryId?: string
   painBefore?: number
   painAfter?: number
+  /** 0–10, asked the morning after: has the pain settled? (pain-monitoring model) */
+  morningPain?: number
   items: SessionItem[]
   notes?: string
   source: Source

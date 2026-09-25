@@ -55,6 +55,9 @@ test('recovery plan: only vetted exercises in range, targets from formulas, and 
   expect(library).toContain('ex-wrist-ext-ecc')
   expect(library).toContain('ex-cat-cow')
   expect(library).not.toContain('ex-ankle-alphabet') // the ankle sprain is resolved
+  // With a sore elbow too, the back exercises on hands and knees say how to adjust for it.
+  const catCow = (requests.at(-1)!.input.context as { library: { id: string; adjustFor?: string }[] }).library.find((e) => e.id === 'ex-cat-cow')
+  expect(catCow?.adjustFor).toMatch(/^Tennis elbow: Your weight goes through your hands/)
   expect(JSON.stringify(requests.at(-1)!.input)).not.toContain('Alex')
 
   // Invented and off-injury exercises are dropped; an over-range dose is capped (sets 10 → 3).

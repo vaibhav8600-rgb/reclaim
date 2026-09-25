@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { Check, Plus, X } from 'lucide-react'
-import { db, type Exercise, type SessionItem } from '../../db/db'
-import { useExerciseMap, useExercises } from '../../db/hooks'
+import { db, type Exercise, type Injury, type SessionItem } from '../../db/db'
+import { isOpenInjury, useExerciseMap, useExercises, useInjuries, useMeta } from '../../db/hooks'
 import { alive, getMeta, restore, save, setMeta, softDelete } from '../../db/repo'
 import { Field, Group, PickerRow } from '../../components/ui'
 import { formatTime } from '../../lib/dates'
 import { haptic } from '../../lib/haptics'
 import { useBack } from '../../lib/nav'
 import { requestPersistence } from '../../lib/platform'
-import { DRAFT_KEY, itemDone, itemsFromPlan, type SessionDraft } from '../../lib/rehab'
+import { DRAFT_KEY, FLARE_KEY, flareItems, itemDone, itemsFromPlan, type Flare, type SessionDraft } from '../../lib/rehab'
 import { toast } from '../../lib/toast'
 import { DeleteRow, SheetForm } from '../log/shared'
+import { AdjustNotes } from './AdjustNotes'
 import { CompactScale } from './components'
 import { ExerciseAnimation, hasAnimation } from './ExerciseAnimation'
 
@@ -22,6 +23,8 @@ export function SessionPage() {
   const back = useBack('/rehab', 'sheet-down')
   const exercises = useExerciseMap()
   const library = useExercises()
+  const open = useInjuries()?.filter(isOpenInjury) ?? []
+  const flare = useMeta<Flare | null>(FLARE_KEY)
   const [s, setS] = useState<SessionDraft>()
   const recordedAt = useRef<number>(undefined)
   const touched = useRef(false)
@@ -39,7 +42,9 @@ export function SessionPage() {
       const draft = await getMeta<SessionDraft>(DRAFT_KEY)
       if (draft) return setS(draft)
       const plan = (await db.prescriptions.toArray()).filter(alive)
-      setS({ startedAt: Date.now(), injuryId: injuryParam, items: itemsFromPlan(plan, injuryParam) })
+      const items = itemsFromPlan(plan, injuryParam)
+      // During a flare-up, a new session starts at half the usual sets.
+      setS({ startedAt: Date.now(), injuryId: injuryParam, items: (await getMeta<Flare | null>(FLARE_KEY)) ? flareItems(items) : items })
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId])
@@ -106,6 +111,11 @@ export function SessionPage() {
       <p className="-mt-2 px-1 text-[0.875rem] text-muted">
         Started {formatTime(s.startedAt)} · {doneCount} of {s.items.length} exercises done
       </p>
+      {flare && !editId && (
+        <p className="card px-4 py-3 text-[0.9375rem]" data-testid="flare-session">
+          <span className="font-semibold">Flare-up: </span>half the usual sets today. Keep pain during at 3/10 or below, and skip anything that sharpens it.
+        </p>
+      )}
 
       <CompactScale label="Pain Before" value={s.painBefore} onChange={(v) => update((d) => ({ ...d, painBefore: v }))} />
 
@@ -118,6 +128,7 @@ export function SessionPage() {
           key={item.exerciseId}
           item={item}
           exercise={exercises.get(item.exerciseId)}
+          injuries={open}
           onChange={(fn) => updateItem(index, fn)}
           onRemove={() => update((d) => ({ ...d, items: d.items.filter((_, k) => k !== index) }))}
         />
@@ -140,9 +151,10 @@ export function SessionPage() {
   )
 }
 
-function ItemCard({ item, exercise, onChange, onRemove }: {
+function ItemCard({ item, exercise, injuries, onChange, onRemove }: {
   item: SessionItem
   exercise?: Exercise
+  injuries: Injury[]
   onChange: (fn: (i: SessionItem) => SessionItem) => void
   onRemove: () => void
 }) {
@@ -173,6 +185,7 @@ function ItemCard({ item, exercise, onChange, onRemove }: {
         </div>
       </div>
       {showHow && <div className="card mb-2 p-3"><ExerciseAnimation exerciseId={item.exerciseId} name={name} compact /></div>}
+      <AdjustNotes exerciseId={item.exerciseId} injuries={injuries} className="mb-2" />
       <Group>
         {item.sets.map((set, k) => (
           <div key={k} className="cell !py-2">
