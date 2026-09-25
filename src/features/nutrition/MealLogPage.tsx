@@ -124,8 +124,10 @@ export function MealLogPage() {
   // Logging part of a recipe: every food (and so the total) scales to the servings eaten.
   const logged = recipe ? items.map((i) => ({ ...scale(i, eaten / batch), amount: i.amount && `${i.amount} × ${eaten}/${batch}` })) : items
   const total: Nutrients = foods.length ? totals(logged) : { protein: num(protein), calories: opt(calories) }
+  // Left blank, the meal is named after its foods ("Egg, boiled + Roti / chapati").
+  const mealName = name.trim() || items.map((i) => i.name).filter(Boolean).join(' + ').slice(0, 120)
   const valid =
-    !!name.trim() &&
+    !!mealName &&
     items.every((i) => i.name && okNumber(i.protein) && okNumber(i.calories) && okNumber(i.carbs) && okNumber(i.fat) && okNumber(i.fiber)) &&
     Number.isFinite(total.protein) &&
     okNumber(total.protein) &&
@@ -160,11 +162,11 @@ export function MealLogPage() {
   async function submit() {
     haptic()
     if (editingSaved) {
-      await save(db.savedMeals, { id: savedId, name: name.trim(), ...all(foods.length ? totals(items) : total), items, servings: batch > 1 ? batch : undefined })
-      toast(savedId ? 'Saved meal updated' : `${name.trim()} added to Saved Meals`)
+      await save(db.savedMeals, { id: savedId, name: mealName, ...all(foods.length ? totals(items) : total), items, servings: batch > 1 ? batch : undefined })
+      toast(savedId ? 'Saved meal updated' : `${mealName} added to Saved Meals`)
       return back()
     }
-    const values = { name: name.trim(), ...all(total), items: logged }
+    const values = { name: mealName, ...all(total), items: logged }
     await save(db.meals, {
       id,
       ...values,
@@ -210,7 +212,7 @@ export function MealLogPage() {
       )}
 
       <Field label="Meal">
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. 2 eggs on toast, chicken rice bowl" maxLength={120} autoComplete="off" />
+        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={name.trim() ? undefined : mealName || 'e.g. 2 eggs on toast, chicken rice bowl'} maxLength={120} autoComplete="off" />
       </Field>
 
       {!editingSaved && <Segmented options={MEAL_SLOTS} value={slot} onChange={setSlot} />}
