@@ -135,3 +135,16 @@ test('goals: calories worked out from the profile, and meal ideas that fit whatâ
   expect(sent.task).toBe('meal-ideas')
   expect(sent.input.context).toMatchObject({ remaining: { calories: 2000 }, diet: 'vegetarian' })
 })
+
+test('pick foods and save: no need to type a meal name, itâ€™s named after the foods', async ({ page }) => {
+  await page.goto('/log/meal')
+  for (const [query, food] of [['boiled egg', /^Egg, boiled/], ['roti', /^Roti \/ chapati/]] as const) {
+    await page.getByRole('button', { name: 'Search Foods' }).click()
+    await page.getByLabel('Search foods').fill(query)
+    await page.getByRole('button', { name: food }).click()
+    await page.getByRole('button', { name: 'Add to Meal' }).click()
+  }
+  await expect(page.getByLabel('Meal', { exact: true })).toHaveAttribute('placeholder', 'Egg, boiled + Roti / chapati')
+  await save(page)
+  expect((await dumpDb(page)).meals).toMatchObject([{ name: 'Egg, boiled + Roti / chapati' }])
+})
