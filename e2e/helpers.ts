@@ -8,7 +8,9 @@ export async function importBackup(page: Page, backup: DemoBackup | object, name
   await page.goto('/settings')
   await page.getByLabel('Backup file').setInputFiles({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) })
   await page.getByRole('button', { name: /^Merge \d+/ }).click()
-  await expect(page.getByText('Backup restored')).toBeVisible({ timeout: 90_000 })
+  // Wait on lasting state, not the 2.6-second toast (slow WebKit can miss it): the plan closes only on success.
+  await expect(page.getByRole('button', { name: /^Merge \d+/ })).toBeHidden({ timeout: 90_000 })
+  await expect(page.getByText(/^Restore failed/)).toHaveCount(0)
 }
 
 /** Seed the realistic demo person. Returns the data so tests can compute expectations from it. */

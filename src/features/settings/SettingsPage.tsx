@@ -51,7 +51,7 @@ export function SettingsPage() {
       <Section>
         <Group inset={TILE_INSET}>
           <Row icon={<IconTile icon={Target} color="orange" />} title="Goals" subtitle="Calories, protein, water, steps, sleep and weight" to="/goals" />
-          <Row icon={<IconTile icon={Heart} color="pink" />} title="Apple Health" subtitle="Bring in steps, weight and sleep" to="/settings/health" />
+          <Row icon={<IconTile icon={Heart} color="pink" />} title="Apple Health" subtitle="Bring in your steps" to="/settings/health" />
         </Group>
       </Section>
       <AppearanceSection />
