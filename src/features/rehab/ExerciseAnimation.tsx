@@ -1,66 +1,14 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pause, Play } from 'lucide-react'
-import { at, cycleLength, dir, L, solve, type Figure, type Frame, type Pt, type Segment, type Spec } from './animation'
+import { at, cycleLength, dir, L, solve, type Figure, type Pt, type Segment, type Spec } from './animation'
+import { FITNESS_SCENES } from './fitnessScenes'
+import { ACCENT, Chair, Dumbbell, Floor, forearmOnTable, fours, INK, Mat, PROP, PROP_FILL, seated, standing, supine, Table, Wall, type Scene } from './sceneKit'
 
 /**
  * Looping 2D demonstrations of the starter exercises. One simple figure (see animation.ts), the working part in
  * the accent colour, a caption for each phase ("Lower slowly, 3–4 s"). Pauses when off screen or tapped; with
  * Reduce Motion, shows the start and key positions side by side instead of moving.
  */
-
-interface Scene {
-  view: [number, number, number, number]
-  base: Spec
-  frames: Frame[]
-  highlight?: Segment[]
-  /** Drawn behind the figure (furniture), or in front of it (weights, bands). */
-  back?: ReactNode
-  front?: (f: Figure, s: Spec) => ReactNode
-  /** Views the side-on figure can't show (seen from above, behind, the front): drawn instead of it. */
-  draw?: (s: Spec) => ReactNode
-  note?: string
-}
-
-const FLOOR = 154
-const INK = 'var(--color-ink)'
-const ACCENT = 'var(--color-accent)'
-const PROP = 'var(--color-faint)'
-const PROP_FILL = 'var(--color-fill)'
-
-/* ─────────── props ─────────── */
-
-const Floor = ({ x1 = 0, x2 = 200 }: { x1?: number; x2?: number }) => <line x1={x1} y1={FLOOR} x2={x2} y2={FLOOR} stroke={PROP} strokeWidth={2} strokeLinecap="round" />
-/** A chair seen from the side: seat at y 118, back on the left. */
-const Chair = ({ x = 48 }: { x?: number }) => (
-  <g stroke={PROP} strokeWidth={3} strokeLinecap="round" fill="none">
-    <line x1={x} y1={118} x2={x + 40} y2={118} />
-    <line x1={x + 4} y1={118} x2={x + 4} y2={FLOOR} />
-    <line x1={x + 36} y1={118} x2={x + 36} y2={FLOOR} />
-    <line x1={x} y1={118} x2={x - 4} y2={72} />
-  </g>
-)
-const Table = ({ x1, x2, y }: { x1: number; x2: number; y: number }) => (
-  <g stroke={PROP} strokeWidth={3} strokeLinecap="round">
-    <rect x={x1} y={y} width={x2 - x1} height={5} rx={2} fill={PROP_FILL} />
-    <line x1={x2 - 8} y1={y + 5} x2={x2 - 8} y2={FLOOR} />
-  </g>
-)
-const Wall = ({ x, top = -40 }: { x: number; top?: number }) => <rect x={x} y={top} width={6} height={FLOOR - top} fill={PROP_FILL} stroke={PROP} strokeWidth={1.5} />
-const Mat = ({ x1, x2 }: { x1: number; x2: number }) => <rect x={x1} y={FLOOR - 2} width={x2 - x1} height={4} rx={2} fill={PROP_FILL} stroke={PROP} strokeWidth={1} />
-
-/** A dumbbell held across the hand. */
-function Dumbbell({ f }: { f: Figure }) {
-  const c = { x: (f.n.wrist.x + f.n.hand.x) / 2, y: (f.n.wrist.y + f.n.hand.y) / 2 }
-  const a = Math.atan2(f.n.hand.y - f.n.wrist.y, f.n.hand.x - f.n.wrist.x) + Math.PI / 2
-  const e = (k: number): Pt => ({ x: c.x + Math.cos(a) * k, y: c.y + Math.sin(a) * k })
-  return (
-    <g stroke={PROP} strokeWidth={3} strokeLinecap="round">
-      <line x1={e(-9).x} y1={e(-9).y} x2={e(9).x} y2={e(9).y} />
-      <circle cx={e(-9).x} cy={e(-9).y} r={4.5} fill={PROP_FILL} />
-      <circle cx={e(9).x} cy={e(9).y} r={4.5} fill={PROP_FILL} />
-    </g>
-  )
-}
 
 /* ─────────── the figure ─────────── */
 
@@ -96,15 +44,6 @@ function Body({ f, s, highlight = [] }: { f: Figure; s: Spec; highlight?: Segmen
 }
 
 /* ─────────── scenes ─────────── */
-
-const seated: Spec = { hipX: 70, hipY: 114, torso: 172, head: 176, nTH: 90, nSH: 0, nFT: 90, fTH: 90, fSH: 0, fFT: 90 }
-const standing: Spec = { hipX: 100, hipY: 76, torso: 180, head: 180, nUA: 4, nFA: 6, nH: 6, fUA: -4, fFA: 2, fH: 2, nTH: 0, nSH: 0, nFT: 90, fTH: 0, fSH: 0, fFT: 90 }
-/** On the back, head to the left. */
-const supine: Spec = { hipX: 104, hipY: 150, torso: -90, head: -90, nUA: 90, nFA: 90, nH: 90, fUA: 90, fFA: 90, fH: 90 }
-/** On hands and knees: hands under the shoulders, knees under the hips. */
-const fours: Spec = { hipX: 62, hipY: 112, torsoAt: [106, 101], head: 100, curve: 0, nUA: 0, nFA: 0, nH: 90, fUA: -2, fFA: -2, fH: 90, nTH: 0, nSH: -90, nFT: -90, fTH: 2, fSH: -90, fFT: -90 }
-/** Forearm resting flat on a table, from the seated pose. */
-const forearmOnTable: Partial<Spec> = { nUA: 19.3, nFA: 90 }
 
 const SCENES: Record<string, Scene> = {
   'ex-wrist-ext-iso': {
@@ -439,7 +378,7 @@ const SCENES: Record<string, Scene> = {
   },
 }
 
-export const hasAnimation = (exerciseId: string) => exerciseId in SCENES
+export const hasAnimation = (exerciseId: string) => exerciseId in SCENES || exerciseId in FITNESS_SCENES
 
 function usePrefersReducedMotion() {
   const [reduce, setReduce] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -466,7 +405,7 @@ function Picture({ scene, spec }: { scene: Scene; spec: Spec }) {
 
 /** A looping demonstration of a starter exercise, or nothing for exercises without one. */
 export function ExerciseAnimation({ exerciseId, name, compact }: { exerciseId: string; name: string; compact?: boolean }) {
-  const scene = SCENES[exerciseId]
+  const scene = SCENES[exerciseId] ?? FITNESS_SCENES[exerciseId]
   const reduce = usePrefersReducedMotion()
   const box = useRef<HTMLDivElement>(null)
   const [ms, setMs] = useState(0)
