@@ -25,6 +25,7 @@
 
   /* Icon tiles (iOS system colours) */
   --color-tile-pink: #ff2d55;
+  --color-tile-red: #ff3b30;
   --color-tile-blue: #007aff;
   --color-tile-orange: #ff9500;
   --color-tile-indigo: #5856d6;
@@ -65,6 +66,7 @@
   --color-danger: #ff453a;
 
   --color-tile-pink: #ff375f;
+  --color-tile-red: #ff453a;
   --color-tile-blue: #0a84ff;
   --color-tile-orange: #ff9f0a;
   --color-tile-indigo: #5e5ce6;

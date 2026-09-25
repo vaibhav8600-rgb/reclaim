@@ -18,6 +18,21 @@ export function candidates(exercises: Exercise[], injuries: Injury[]) {
   })
 }
 
+/**
+ * How to adjust an exercise for the user's other open injuries: one note per body region the exercise isn't for
+ * (two sore knees get one kneeling note). Injuries passed in should be the open ones.
+ */
+export function adjustments(exerciseId: string, injuries: Injury[]) {
+  const guide = EXERCISE_GUIDES[exerciseId]
+  if (!guide?.adjust) return []
+  const out = new Map<string, { region: string; injury: Injury; note: string }>()
+  for (const injury of injuries) {
+    const note = guide.adjust[injury.bodyRegion]
+    if (note && !guide.for.includes(injury.bodyRegion) && !out.has(injury.bodyRegion)) out.set(injury.bodyRegion, { region: injury.bodyRegion, injury, note })
+  }
+  return [...out.values()]
+}
+
 /** An AI-chosen dose, kept inside the vetted range. */
 export function clampDose(guide: ExerciseGuide, d: { sets: number; target: number; timesPerDay: number; daysPerWeek: number }) {
   return {

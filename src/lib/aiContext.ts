@@ -5,7 +5,7 @@ import { dayKey, daysAgo, daysBetween, fromDayKey } from './dates'
 import { factKey, factValue } from './facts'
 import { qualityLabel, sleepHours } from './daily'
 import { dailyTotals } from './nutrition'
-import { candidates } from './plan'
+import { adjustments, candidates } from './plan'
 import { itemDone, startOfWeek, weeklyAdherence } from './rehab'
 
 /**
@@ -227,6 +227,8 @@ export async function buildPlanContext() {
       timesPerDay: g.timesPerDay,
       daysPerWeek: g.daysPerWeek,
       note: g.caution,
+      // Conflicts with their other injuries, and how to adjust for them.
+      adjustFor: adjustments(e.id, open).map((a) => `${a.injury.name}: ${a.note}`).join(' ') || undefined,
     })),
   }
 }

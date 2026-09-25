@@ -3,12 +3,13 @@ import { useParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Plus, TrendingUp } from 'lucide-react'
 import { db } from '../../db/db'
-import { useInjuryMap, usePrescriptions, useSessions } from '../../db/hooks'
+import { isOpenInjury, useInjuries, useInjuryMap, usePrescriptions, useSessions } from '../../db/hooks'
 import { LineChart, niceMax } from '../../components/LineChart'
 import { MLink } from '../../components/MLink'
 import { GlassButton, Group, NavBar, Row, Section } from '../../components/ui'
 import { formatShortDate } from '../../lib/dates'
 import { exerciseProgress, formatFrequency, formatTarget } from '../../lib/rehab'
+import { AdjustNotes } from './AdjustNotes'
 import { ExerciseAnimation, hasAnimation } from './ExerciseAnimation'
 
 export function ExerciseDetailPage() {
@@ -17,6 +18,7 @@ export function ExerciseDetailPage() {
   const prescriptions = usePrescriptions()
   const sessions = useSessions()
   const injuries = useInjuryMap()
+  const open = useInjuries()?.filter(isOpenInjury) ?? []
   const progress = useMemo(() => (sessions ? exerciseProgress(sessions, id) : undefined), [sessions, id])
 
   if (exercise === undefined || !prescriptions || !progress) return null
@@ -44,6 +46,7 @@ export function ExerciseDetailPage() {
           <div className="card p-4">
             <ExerciseAnimation exerciseId={id} name={exercise.name} />
             {exercise.instructions && <p className={`leading-relaxed ${hasAnimation(id) ? 'mt-3 border-t border-line pt-3' : ''}`}>{exercise.instructions}</p>}
+            <AdjustNotes exerciseId={id} injuries={open} className="mt-3" />
           </div>
         </Section>
       )}

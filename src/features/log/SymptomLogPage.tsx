@@ -9,6 +9,7 @@ import { Chips, Field, Group } from '../../components/ui'
 import { SYMPTOM_TYPES, TRIGGER_SUGGESTIONS, symptomLabel } from '../../lib/constants'
 import { haptic } from '../../lib/haptics'
 import { requestPersistence } from '../../lib/platform'
+import { NERVE_SYMPTOMS } from '../../lib/safety'
 import { toast } from '../../lib/toast'
 import { DeleteRow, InjuryPicker, SheetForm, WhenRow } from './shared'
 
@@ -78,6 +79,9 @@ export function SymptomLogPage() {
       <div>
         <span className="section-label block">Symptom</span>
         <Chips options={SYMPTOM_TYPES} value={draft.type} onChange={(v) => set('type', v)} />
+        {NERVE_SYMPTOMS.includes(draft.type ?? '') && (
+          <p className="section-footer" data-testid="nerve-note">Numbness, tingling or weakness can be a warning sign. After you save, Today asks a few quick safety questions.</p>
+        )}
       </div>
 
       <div>

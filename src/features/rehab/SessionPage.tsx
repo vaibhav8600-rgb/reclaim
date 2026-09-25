@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { Check, Plus, X } from 'lucide-react'
-import { db, type Exercise, type SessionItem } from '../../db/db'
-import { useExerciseMap, useExercises } from '../../db/hooks'
+import { db, type Exercise, type Injury, type SessionItem } from '../../db/db'
+import { isOpenInjury, useExerciseMap, useExercises, useInjuries } from '../../db/hooks'
 import { alive, getMeta, restore, save, setMeta, softDelete } from '../../db/repo'
 import { Field, Group, PickerRow } from '../../components/ui'
 import { formatTime } from '../../lib/dates'
@@ -12,6 +12,7 @@ import { requestPersistence } from '../../lib/platform'
 import { DRAFT_KEY, itemDone, itemsFromPlan, type SessionDraft } from '../../lib/rehab'
 import { toast } from '../../lib/toast'
 import { DeleteRow, SheetForm } from '../log/shared'
+import { AdjustNotes } from './AdjustNotes'
 import { CompactScale } from './components'
 import { ExerciseAnimation, hasAnimation } from './ExerciseAnimation'
 
@@ -22,6 +23,7 @@ export function SessionPage() {
   const back = useBack('/rehab', 'sheet-down')
   const exercises = useExerciseMap()
   const library = useExercises()
+  const open = useInjuries()?.filter(isOpenInjury) ?? []
   const [s, setS] = useState<SessionDraft>()
   const recordedAt = useRef<number>(undefined)
   const touched = useRef(false)
@@ -118,6 +120,7 @@ export function SessionPage() {
           key={item.exerciseId}
           item={item}
           exercise={exercises.get(item.exerciseId)}
+          injuries={open}
           onChange={(fn) => updateItem(index, fn)}
           onRemove={() => update((d) => ({ ...d, items: d.items.filter((_, k) => k !== index) }))}
         />
@@ -140,9 +143,10 @@ export function SessionPage() {
   )
 }
 
-function ItemCard({ item, exercise, onChange, onRemove }: {
+function ItemCard({ item, exercise, injuries, onChange, onRemove }: {
   item: SessionItem
   exercise?: Exercise
+  injuries: Injury[]
   onChange: (fn: (i: SessionItem) => SessionItem) => void
   onRemove: () => void
 }) {
@@ -173,6 +177,7 @@ function ItemCard({ item, exercise, onChange, onRemove }: {
         </div>
       </div>
       {showHow && <div className="card mb-2 p-3"><ExerciseAnimation exerciseId={item.exerciseId} name={name} compact /></div>}
+      <AdjustNotes exerciseId={item.exerciseId} injuries={injuries} className="mb-2" />
       <Group>
         {item.sets.map((set, k) => (
           <div key={k} className="cell !py-2">

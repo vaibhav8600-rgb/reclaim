@@ -45,6 +45,7 @@ const WelcomePage = page(() => import('./features/goals/WelcomePage'), 'WelcomeP
 const SleepLogPage = page(() => import('./features/log/SleepLogPage'), 'SleepLogPage')
 const StepsLogPage = page(() => import('./features/log/StepsLogPage'), 'StepsLogPage')
 const HealthPage = page(() => import('./features/health/HealthPage'), 'HealthPage')
+const SafetyCheckPage = page(() => import('./features/health/SafetyCheckPage'), 'SafetyCheckPage')
 const LabPage = page(() => import('./features/health/LabPage'), 'LabPage')
 const ReviewPage = page(() => import('./features/health/ReviewPage'), 'ReviewPage')
 const FactFormPage = page(() => import('./features/health/FactFormPage'), 'FactFormPage')
@@ -81,6 +82,7 @@ export function App() {
             <Route path="report" element={<ReportPage />} />
             <Route path="nutrition" element={<NutritionPage />} />
             <Route path="health" element={<HealthPage />} />
+            <Route path="safety" element={<SafetyCheckPage />} />
             <Route path="plan" element={<PlanPage />} />
             <Route path="goals" element={<GoalsPage />} />
             <Route path="nutrition/foods/:id" element={<FoodPage />} />
