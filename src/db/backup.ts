@@ -16,6 +16,7 @@ const base = {
   deletedAt: z.number().optional(),
 }
 const source = z.enum(['user', 'user_confirmed', 'ai_estimate', 'clinician', 'device', 'imported'])
+const score = z.number().min(0).max(10)
 const nutrients = {
   protein: z.number().min(0),
   calories: z.number().min(0).optional(),
@@ -155,6 +156,18 @@ const schemas = {
   }),
   savedMeals: z.object({ ...base, name: z.string(), ...nutrients, items: z.array(foodItem), servings: z.number().min(1).max(100).optional() }),
   foods: z.object({ ...base, name: z.string(), serving: z.string(), grams: z.number().min(0).optional(), ...nutrients }),
+  checkins: z.object({
+    ...base,
+    recordedAt: z.number(),
+    pain: score.optional(),
+    enjoyment: score.optional(),
+    generalActivity: score.optional(),
+    sitMinutes: z.number().min(0).max(1440).optional(),
+    walkMinutes: z.number().min(0).max(1440).optional(),
+    nightsWoken: z.number().int().min(0).max(7).optional(),
+    activities: z.array(z.object({ name: z.string().max(80), score })).max(5).optional(),
+    source,
+  }),
   facts: z.object({
     ...base,
     kind: z.enum(FACT_KINDS),

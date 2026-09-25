@@ -53,6 +53,18 @@ export const GUIDELINES = {
     short: 'Protein and exercise position stand (ISSN, 2017)',
     citation: 'Jäger R, Kerksick CM, Campbell BI, et al. International Society of Sports Nutrition Position Stand: protein and exercise. J Int Soc Sports Nutr. 2017;14:20.',
   },
+  kneeLoad: {
+    short: 'Weight loss and knee load (Arthritis Rheum, 2005)',
+    citation: 'Messier SP, Gutekunst DJ, Davis C, DeVita P. Weight loss reduces knee-joint loads in overweight and obese older adults with knee osteoarthritis. Arthritis Rheum. 2005;52(7):2026–2032.',
+  },
+  peg: {
+    short: 'PEG pain scale (J Gen Intern Med, 2009)',
+    citation: 'Krebs EE, Lorenz KA, Bair MJ, et al. Development and initial validation of the PEG, a three-item scale assessing pain intensity and interference. J Gen Intern Med. 2009;24(6):733–738.',
+  },
+  psfs: {
+    short: 'Patient-Specific Functional Scale (Physiother Can, 1995)',
+    citation: 'Stratford P, Gill C, Westaway M, Binkley J. Assessing disability and change on individual patients: a report of a patient specific measure. Physiother Can. 1995;47(4):258–263.',
+  },
   water: {
     short: 'Dietary reference values for water (EFSA, 2010)',
     citation: 'EFSA Panel on Dietetic Products, Nutrition, and Allergies. Scientific Opinion on Dietary Reference Values for water. EFSA Journal. 2010;8(3):1459.',

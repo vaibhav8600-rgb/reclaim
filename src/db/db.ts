@@ -216,6 +216,26 @@ export interface Sleep extends Base {
  * One day's activity. The id is `activity-YYYY-MM-DD`, so there's one per day and two devices logging the same
  * day merge into one record instead of two.
  */
+/**
+ * A weekly check-in on how pain affects everyday life, beyond the pain score: the PEG scale (pain, enjoyment,
+ * general activity; Krebs 2009), how long sitting and walking are comfortable, nights woken by pain, and the
+ * Patient-Specific Functional Scale (the user's own hardest activities, 0 = unable to 10 = as before; Stratford 1995).
+ */
+export interface CheckIn extends Base {
+  recordedAt: number
+  /** PEG, 0–10 each, over the past week */
+  pain?: number
+  enjoyment?: number
+  generalActivity?: number
+  /** Minutes before sitting or walking starts to hurt (bucket midpoints, see lib/checkin) */
+  sitMinutes?: number
+  walkMinutes?: number
+  /** Nights woken by pain in the past week, 0–7 */
+  nightsWoken?: number
+  activities?: { name: string; score: number }[]
+  source: Source
+}
+
 export interface Activity extends Base {
   /** YYYY-MM-DD */
   date: string
@@ -326,6 +346,7 @@ export const db = new Dexie('reclaim') as Dexie & {
   sleep: Table<Sleep, string>
   activity: Table<Activity, string>
   foods: Table<CustomFood, string>
+  checkins: Table<CheckIn, string>
   meta: Table<Meta, string>
 }
 
@@ -370,10 +391,14 @@ db.version(7).stores({
   foods: 'id, name, updatedAt',
 })
 
+db.version(8).stores({
+  checkins: 'id, recordedAt, updatedAt',
+})
+
 db.on('populate', (tx) => {
   tx.table('exercises').bulkAdd(STARTER_EXERCISES)
 })
 
 /** Tables included in backups and future sync. */
-export const DATA_TABLES = ['profile', 'injuries', 'symptoms', 'measurements', 'journal', 'exercises', 'prescriptions', 'sessions', 'documents', 'meals', 'savedMeals', 'facts', 'water', 'sleep', 'activity', 'foods'] as const
+export const DATA_TABLES = ['profile', 'injuries', 'symptoms', 'measurements', 'journal', 'exercises', 'prescriptions', 'sessions', 'documents', 'meals', 'savedMeals', 'facts', 'water', 'sleep', 'activity', 'foods', 'checkins'] as const
 export type DataTable = (typeof DATA_TABLES)[number]

@@ -14,6 +14,8 @@ import { runAi } from '../../lib/ai'
 import { buildAiContext } from '../../lib/aiContext'
 import { injuryPlace, kindInfo, sideLabel, statusLabel, symptomLabel } from '../../lib/constants'
 import { dayKey, daysAgo, daysBetween, formatMediumDate, fromDayKey } from '../../lib/dates'
+import { checkInTrend, toleranceLabel } from '../../lib/checkin'
+import { reachLabel, reachTrend } from '../../lib/reach'
 import { itemDone, plannedPerWeek, startOfWeek } from '../../lib/rehab'
 import { dailySeries } from '../../lib/stats'
 import { kindOf } from '../documents/kinds'
@@ -45,7 +47,7 @@ export function ReportPage() {
 
   const data = useLiveQuery(async () => {
     if (!chosen) return undefined
-    const [symptoms, measurements, sessions, prescriptions, exercises, documents, meals] = await Promise.all([
+    const [symptoms, measurements, sessions, prescriptions, exercises, documents, meals, checkins] = await Promise.all([
       db.symptoms.where('recordedAt').aboveOrEqual(from).toArray(),
       db.measurements.where('injuryId').equals(chosen).toArray(),
       db.sessions.where('recordedAt').aboveOrEqual(from).toArray(),
@@ -53,6 +55,7 @@ export function ReportPage() {
       db.exercises.toArray(),
       db.documents.where('injuryId').equals(chosen).toArray(),
       db.meals.where('recordedAt').aboveOrEqual(from).toArray(),
+      db.checkins.where('recordedAt').aboveOrEqual(from).toArray(),
     ])
     return {
       symptoms: symptoms.filter((s) => alive(s) && s.injuryId === chosen),
@@ -62,6 +65,7 @@ export function ReportPage() {
       exercises: new Map(exercises.map((e) => [e.id, e])),
       documents: documents.filter(alive).sort((a, b) => b.date.localeCompare(a.date)),
       meals: meals.filter(alive),
+      checkins: checkins.filter(alive),
     }
   }, [chosen, from])
 
@@ -87,6 +91,11 @@ export function ReportPage() {
   }).reverse()
   const byHour = (a: number, b: number) => avg(pain.filter((s) => new Date(s.recordedAt).getHours() >= a && new Date(s.recordedAt).getHours() < b).map((s) => s.severity))
   const triggers = [...pain.reduce((m, s) => (s.trigger ? m.set(s.trigger, [...(m.get(s.trigger) ?? []), s.severity]) : m), new Map<string, number[]>())].sort((a, b) => b[1].length - a[1].length).slice(0, 5)
+  const reached = data.symptoms.filter((s) => s.reach !== undefined).sort((a, b) => a.recordedAt - b.recordedAt)
+  const reachTrendWord = { spreading: 'spreading further down', centralising: 'moving back towards the spine', steady: 'about the same' }
+  const fn = checkInTrend(data.checkins)
+  const fromTo = (x: { first: number; latest: number; count: number } | undefined, show: (v: number) => string = (v) => `${v}/10`) =>
+    x && (x.count > 1 ? `${show(x.first)} → ${show(x.latest)}` : show(x.latest))
   const other = [...data.symptoms.filter((s) => s.type !== 'pain').reduce((m, s) => m.set(s.type, [...(m.get(s.type) ?? []), s.severity]), new Map<string, number[]>())]
 
   // Rehab
@@ -180,6 +189,31 @@ export function ReportPage() {
         {other.length > 0 && (
           <ReportSection title="Other Symptoms">
             <Facts rows={other.map(([t, v]) => [symptomLabel(t), `${v.length} logs, average ${f1(avg(v))}`])} />
+          </ReportSection>
+        )}
+
+        {reached.length > 0 && injury && (
+          <ReportSection title="How Far Symptoms Reach">
+            <Facts
+              rows={[
+                ['Latest', reachLabel(injury.bodyRegion, reached[reached.length - 1].reach)],
+                ['Trend', reachTrend(reached) && `${reachTrendWord[reachTrend(reached)!]} (${reached.length} logs)`],
+              ]}
+            />
+          </ReportSection>
+        )}
+
+        {data.checkins.length > 0 && (
+          <ReportSection title={`Everyday Function (${data.checkins.length} weekly ${data.checkins.length === 1 ? 'check-in' : 'check-ins'})`}>
+            <Facts
+              rows={[
+                ['Pain and interference (PEG, 0–10, lower is better)', fromTo(fn.peg)],
+                ['Own activities (PSFS, 0–10, higher is better)', fromTo(fn.psfs)],
+                ['Sitting before pain', fromTo(fn.sit, (v) => toleranceLabel(v) ?? `${v} min`)],
+                ['Walking before pain', fromTo(fn.walk, (v) => toleranceLabel(v) ?? `${v} min`)],
+                ['Nights woken by pain', fromTo(fn.nights, (v) => `${v} a week`)],
+              ]}
+            />
           </ReportSection>
         )}
 

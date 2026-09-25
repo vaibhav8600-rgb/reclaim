@@ -6,13 +6,13 @@ import { IconTile, ProgressRing } from '../../components/ui'
 import { severityBucket } from '../../lib/constants'
 import { DRAFT_KEY, formatFrequency, formatTarget, startOfWeek, todayAdherence, weeklyAdherence, type SessionDraft } from '../../lib/rehab'
 
-/** One-row 0–10 scale for pain before/after a session. Tap the selected value again to clear. */
-export function CompactScale({ label, value, onChange }: { label: string; value: number | undefined; onChange: (v: number | undefined) => void }) {
+/** One-row 0–10 scale (or 0–max) for pain before/after a session. Tap the selected value again to clear. */
+export function CompactScale({ label, value, onChange, max = 10 }: { label: string; value: number | undefined; onChange: (v: number | undefined) => void; max?: number }) {
   return (
     <div>
       <span className="section-label block">{label}</span>
       <div className="flex justify-between gap-1" role="radiogroup" aria-label={label}>
-        {Array.from({ length: 11 }, (_, n) => {
+        {Array.from({ length: max + 1 }, (_, n) => {
           const selected = value === n
           const b = severityBucket(n)
           return (

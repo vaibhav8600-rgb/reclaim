@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router'
 import { MLink } from '../../components/MLink'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, ClipboardList, CloudDownload, CloudUpload, HeartPulse, Plus, Ruler, ShieldCheck, Smartphone, Sparkles, UserRound } from 'lucide-react'
+import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, ClipboardList, CloudDownload, ClipboardCheck, CloudUpload, HeartPulse, Plus, Ruler, ShieldCheck, Smartphone, Sparkles, UserRound } from 'lucide-react'
 import { db } from '../../db/db'
 import { isOpenInjury, useEntries, useInjuries, useInjuryMap, useMeta, usePrescriptions, useProfile, useSymptomsSince } from '../../db/hooks'
 import { alive, setMeta } from '../../db/repo'
@@ -14,6 +14,7 @@ import { daysAgo, formatLongDate, relativeAge, startOfDay } from '../../lib/date
 import { GOOGLE_CLIENT_ID } from '../../lib/google'
 import { AtAGlance } from './AtAGlance'
 import { isIOS, isStandalone } from '../../lib/platform'
+import { checkInDue } from '../../lib/checkin'
 import { NERVE_SYMPTOMS, SAFETY_CHECK_AT, safetyCheckDue } from '../../lib/safety'
 import { dailySeries, round1, windowAverage } from '../../lib/stats'
 import { WeekCard } from '../rehab/components'
@@ -232,11 +233,15 @@ function Nudges({ hasData, regions }: { hasData: boolean; regions: string[] }) {
     return Math.max(0, ...recent.filter((s) => !s.deletedAt && NERVE_SYMPTOMS.includes(s.type)).map((s) => s.recordedAt)) || undefined
   }, [])
   const safety = safetyCheckDue(regions, safetyCheckAt, lastNerveAt)
+  // null once loaded with none yet (undefined while loading)
+  const lastCheckInAt = useLiveQuery(async () => (await db.checkins.orderBy('recordedAt').reverse().filter((c) => !c.deletedAt).first())?.recordedAt ?? null, [])
+  // One health prompt at a time: the safety check first.
+  const checkIn = !safety && lastCheckInAt !== undefined && checkInDue(regions.length > 0, lastCheckInAt ?? undefined)
 
   const showInstall = isIOS() && !isStandalone() && dismissedInstall !== true
   const backupDue = hasData && firstEntryAt !== undefined && (lastBackupAt ?? firstEntryAt) < daysAgo(7)
 
-  if (!safety && !showInstall && !backupDue && !toReview) return null
+  if (!safety && !checkIn && !showInstall && !backupDue && !toReview) return null
   return (
     <Section className="space-y-3">
       {safety && (
@@ -246,6 +251,15 @@ function Nudges({ hasData, regions }: { hasData: boolean; regions: string[] }) {
           title={safety === 'nerve' ? 'You logged numbness, tingling or weakness' : 'Weekly safety check'}
           body="A few yes-or-no questions about warning signs that need a doctor. About 30 seconds."
           to="/safety"
+        />
+      )}
+      {checkIn && (
+        <Tip
+          icon={ClipboardCheck}
+          color="green"
+          title="Weekly check-in"
+          body="How pain affected your week — sitting, walking, sleep and the things you find hard. About a minute."
+          to="/checkin"
         />
       )}
       {showInstall && (

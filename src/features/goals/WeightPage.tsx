@@ -9,6 +9,8 @@ import { EmptyState, GlassButton, Group, NavBar, Row, Section } from '../../comp
 import { convertUnit, weightKg } from '../../lib/constants'
 import { bmi, bmiRange } from '../../lib/daily'
 import { daysAgo, formatMediumDate, formatShortDate, relativeAge } from '../../lib/dates'
+import { GUIDELINES } from '../../lib/guide'
+import { jointLoad, KNEE_LOAD_PER_KG } from '../../lib/joints'
 
 const round1 = (n: number) => Math.round(n * 10) / 10
 
@@ -37,6 +39,8 @@ export function WeightPage() {
   const goal = profile?.weightGoal
   const toGoal = kg !== undefined && goal ? round1(kg - goal) : undefined
   const b = kg !== undefined && profile?.height ? bmi(kg, profile.height) : undefined
+  const load = jointLoad(readings.flatMap((m) => { const v = weightKg(m); return v === undefined ? [] : [{ at: m.recordedAt, kg: v }] }))
+  const goalLoad = toGoal !== undefined && toGoal >= 1 ? Math.round(toGoal * KNEE_LOAD_PER_KG) : undefined
 
   const shown = readings.filter((m) => m.recordedAt >= daysAgo(89))
   const values = shown.map(inUnit)
@@ -64,6 +68,15 @@ export function WeightPage() {
           )}
         </div>
       </Section>
+
+      {(load || goalLoad) && (
+        <Section title="Easier on Your Knees" footer={`Each kilogram lost takes about ${KNEE_LOAD_PER_KG} kg off the knee with every step. Source: ${GUIDELINES.kneeLoad.short}.`}>
+          <div className="card space-y-1 p-4 text-[0.9375rem]">
+            {load && <p data-testid="knee-load">You’re <span className="font-semibold">{load.lost} kg</span> lighter than on {formatMediumDate(load.since)} — about <span className="font-semibold">{load.kneeKg} kg</span> less on each knee with every step.</p>}
+            {goalLoad && <p className={load ? 'text-muted' : ''} data-testid="knee-goal">Reaching {goal} kg would take about {goalLoad} kg {load ? 'more ' : ''}off each knee with every step.</p>}
+          </div>
+        </Section>
+      )}
 
       <Section prominent title="Last 90 Days">
         <div className="card px-2 pt-3 pb-2">
