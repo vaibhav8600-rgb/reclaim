@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { AiCancelled, confirmAiSend } from './aiPreview'
 import { MAX_DOCUMENT_BYTES_FOR_AI, type ExtractedFact } from '../../shared/ai'
 import { db, type HealthFact, type MedicalDocument } from '../db/db'
 import { alive, getMeta, save, setMeta, softDelete } from '../db/repo'
@@ -39,10 +40,10 @@ async function fileForAi(doc: MedicalDocument, blob: Blob): Promise<{ mimeType: 
  * Summarise a record and pull out its facts. `fillDetails` also files it under the title, type and date
  * printed on it (records added in bulk, whose details are only placeholders).
  */
-export async function readDocument(doc: MedicalDocument, { fillDetails = false, onPartial }: { fillDetails?: boolean; onPartial?: (p: object) => void } = {}) {
+export async function readDocument(doc: MedicalDocument, { fillDetails = false, onPartial, previewed }: { fillDetails?: boolean; onPartial?: (p: object) => void; previewed?: boolean } = {}) {
   const file = await fileForAi(doc, await documentBlob(doc))
   // Streamed even without a live preview: long answers (a full blood panel) get more time that way.
-  const result = await runAi('summarize-document', { title: doc.title, kind: doc.kind, ...file }, onPartial ?? (() => {}))
+  const result = await runAi('summarize-document', { title: doc.title, kind: doc.kind, ...file }, onPartial ?? (() => {}), { previewed })
   const latest = (await db.documents.get(doc.id)) ?? doc // it may have been edited meanwhile
   const d = result.document
   const details = fillDetails
@@ -84,6 +85,9 @@ export const useReadProgress = () =>
  */
 export async function readDocuments(ids: string[]) {
   if (progress.running) return
+  // One look at the whole batch, rather than one per record
+  const docs = (await db.documents.bulkGet(ids)).filter((d): d is MedicalDocument => !!d && alive(d))
+  if (!(await confirmAiSend({ batch: docs.map((d) => ({ title: d.title, fileName: d.fileName, size: d.size })) }))) throw new AiCancelled()
   update({ running: true, done: 0, total: ids.length, skipped: [] })
   try {
     for (const id of ids) {
@@ -92,7 +96,7 @@ export async function readDocuments(ids: string[]) {
         update({ current: doc.title })
         const queued = (await getMeta<string[]>(QUEUE_KEY)) ?? []
         try {
-          await readDocument(doc, { fillDetails: queued.includes(id) })
+          await readDocument(doc, { fillDetails: queued.includes(id), previewed: true })
           await setMeta(QUEUE_KEY, ((await getMeta<string[]>(QUEUE_KEY)) ?? []).filter((x) => x !== id))
         } catch (e) {
           if (!(e instanceof DocumentError)) throw e
@@ -123,6 +127,7 @@ export async function confirmFacts(doc: MedicalDocument, kept: ExtractedFact[]) 
         flag: effectiveFlag(f),
         detail: f.detail || undefined,
         evidence: f.evidence,
+        page: f.page,
         bodyRegion: f.kind === 'condition' ? f.bodyRegion : undefined,
         side: f.kind === 'condition' ? f.side : undefined,
         date: doc.date,

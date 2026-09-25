@@ -166,7 +166,7 @@ export interface MedicalDocument extends Base {
 export interface DocumentSummary {
   readable: 'yes' | 'partly' | 'no'
   summary: string
-  findings: { label: string; detail: string }[]
+  findings: { label: string; detail: string; page?: number }[]
   questions: string[]
   model?: string
   createdAt: number
@@ -196,6 +196,8 @@ export interface HealthFact extends Base {
   documentId?: string
   /** The printed words it was read from. */
   evidence?: string
+  /** The page of the record it's on (records of several pages). */
+  page?: number
   /** For a condition of one body part: where, and which side (lets it become an injury to track). */
   bodyRegion?: string
   side?: 'left' | 'right' | 'both'

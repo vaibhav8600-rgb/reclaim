@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Bell, Camera, Cloud, Download, FileUp, HardDrive, Heart, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Target, Trash2 } from 'lucide-react'
+import { Bell, Camera, Eye, Cloud, Download, FileUp, HardDrive, Heart, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Target, Trash2 } from 'lucide-react'
 import type { AiHealth } from '../../../shared/ai'
 import { AiConsentSheet } from '../../components/ai'
 import { aiHealth, setAiConsent, type AiConsent } from '../../lib/ai'
 import { db, DATA_TABLES, type DataTable } from '../../db/db'
 import { useMeta, useProfile } from '../../db/hooks'
-import { alive, notifyLocalChange, save } from '../../db/repo'
+import { alive, notifyLocalChange, save, setMeta } from '../../db/repo'
+import { AI_PREVIEW_KEY } from '../../lib/aiPreview'
 import { applyImport, buildBackupFile, deleteEverything, markBackedUp, planImport, type ImportPlan } from '../../db/backup'
 import { Avatar, Group, IconTile, NavBar, Row, Section, Segmented, Toggle } from '../../components/ui'
 import { formatWhen, relativeAge } from '../../lib/dates'
@@ -230,6 +231,7 @@ function DriveSection() {
 
 function AiSection() {
   const consent = useMeta<AiConsent>('aiConsent')
+  const preview = useMeta<boolean>(AI_PREVIEW_KEY)
   const [health, setHealth] = useState<AiHealth>()
   const [asking, setAsking] = useState(false)
 
@@ -253,6 +255,7 @@ function AiSection() {
     >
       <Group inset={TILE_INSET}>
         <Toggle icon={<IconTile icon={Sparkles} color="indigo" />} label="AI Features" checked={!!consent} onChange={(on) => (on ? setAsking(true) : void setAiConsent(false))} />
+        <Toggle icon={<IconTile icon={Eye} color="blue" />} label="Show What’s Sent First" checked={!!preview} onChange={(on) => void setMeta(AI_PREVIEW_KEY, on)} />
         <Row icon={<IconTile icon={Server} color="gray" />} title="AI Server" value={health === undefined ? 'Checking…' : health.configured ? `Ready${health.model ? ` · ${health.model}` : ''}` : 'Not set up'} />
         <Row icon={<IconTile icon={Trash2} color="gray" />} title="Clear AI History" tone="danger" onClick={clearHistory} />
       </Group>

@@ -155,7 +155,7 @@ export function FactFormPage() {
         <div>
           <span className="section-label block">Read From</span>
           <Group>
-            {sourceTitle && <Row title={sourceTitle} to={`/documents/${existing.documentId}`} />}
+            {sourceTitle && <Row title={sourceTitle} value={existing.page ? `Page ${existing.page}` : undefined} to={`/documents/${existing.documentId}`} />}
             <p className="cell text-[0.9375rem] text-muted italic">“{existing.evidence}”</p>
           </Group>
         </div>

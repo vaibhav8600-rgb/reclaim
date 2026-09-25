@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { AiCancelled } from '../lib/aiPreview'
 import { createPortal } from 'react-dom'
 import { Eye, Lock, ShieldCheck, Sparkles, X } from 'lucide-react'
 import type { Insight } from '../../shared/ai'
@@ -42,7 +43,7 @@ export function AiAction({ label, runningLabel = 'Thinking…', run, className =
       await run()
       setState({ name: 'idle' })
     } catch (e) {
-      setState(e instanceof AiSignInRequired ? { name: 'signin' } : { name: 'error', message: (e as Error).message })
+      setState(e instanceof AiSignInRequired ? { name: 'signin' } : e instanceof AiCancelled ? { name: 'idle' } : { name: 'error', message: (e as Error).message })
     }
   }
 
