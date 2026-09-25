@@ -45,6 +45,12 @@ also imports a longer line format with several days, weight and sleep (see `src/
 Illustrated step-by-step guide: [Apple Health setup guide](https://claude.ai/artifact/TeLGDUGFJszL5z7mSXPJLy)
 (private: only the owner, or people it's shared with, can open it).
 
+## Daily reminders (optional)
+
+One evening notification with what's left for the day (rehab, the morning check, the weekly check-in, steps),
+worked out on the phone — the server's push carries no health data. Free on Vercel Hobby (one cron a day) and
+Upstash Redis. Setup: [docs/PUSH_SETUP.md](docs/PUSH_SETUP.md); then **Settings → Reminders** on the iPhone.
+
 ## Google Drive backup (optional)
 
 Encrypted backup, sync between devices, and medical records in your Drive. It needs a free Google client ID;

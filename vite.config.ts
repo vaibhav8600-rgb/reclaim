@@ -4,24 +4,28 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+/** Local routes → the same handlers Vercel runs: the module, how it builds its dependencies, and its request handler. */
+const ROUTES = {
+  '/api/ai': { module: '/server/ai/handler.ts', deps: 'depsFromEnv', handle: 'handleAi' },
+  '/api/push': { module: '/server/push.ts', deps: 'pushFromEnv', handle: 'handlePush' },
+} as const
+type Handler = (req: Request, deps: unknown) => Promise<Response>
+
 /**
- * Serves /api/ai locally (dev and preview) with the same handler Vercel runs in production.
- * Server-only secrets (GEMINI_API_KEY, AI_ALLOWED_EMAILS) come from .env.local and never reach the browser bundle.
+ * Serves /api/ai and /api/push locally (dev and preview) with the same handlers Vercel runs in production.
+ * Server-only secrets (GEMINI_API_KEY, AI_ALLOWED_EMAILS, VAPID_PRIVATE_KEY…) come from .env.local and never reach the
+ * browser bundle.
  */
 function localApi(mode: string): Plugin {
   const env = loadEnv(mode, process.cwd(), '')
   let dev: ViteDevServer | undefined
-  let deps: unknown
-  let depsFor: unknown
+  const built = new Map<string, { mod: unknown; deps: unknown }>()
 
-  async function handle(req: IncomingMessage, res: ServerResponse) {
+  async function handle(route: (typeof ROUTES)[keyof typeof ROUTES], req: IncomingMessage, res: ServerResponse) {
     // Dev: Vite's module loader (hot reload). Preview: jiti runs the TypeScript directly.
-    const mod = (dev ? await dev.ssrLoadModule('/server/ai/handler.ts') : await loadHandler()) as typeof import('./server/ai/handler')
-    // Rebuild dependencies when the handler module is reloaded (edits during dev), so they always match.
-    if (depsFor !== mod) {
-      deps = mod.depsFromEnv(env)
-      depsFor = mod
-    }
+    const mod = (dev ? await dev.ssrLoadModule(route.module) : await load(route.module)) as Record<string, unknown>
+    // Rebuild dependencies when the module is reloaded (edits during dev), so they always match.
+    if (built.get(route.module)?.mod !== mod) built.set(route.module, { mod, deps: (mod[route.deps] as (e: typeof env) => unknown)(env) })
     const chunks: Buffer[] = []
     for await (const c of req) chunks.push(c as Buffer)
     const request = new Request(`http://localhost${req.url}`, {
@@ -29,7 +33,7 @@ function localApi(mode: string): Plugin {
       headers: Object.entries(req.headers).flatMap(([k, v]) => (typeof v === 'string' ? [[k, v] as [string, string]] : [])),
       body: req.method === 'POST' ? Buffer.concat(chunks) : undefined,
     })
-    const response = await mod.handleAi(request, deps as Parameters<typeof mod.handleAi>[1])
+    const response = await (mod[route.handle] as Handler)(request, built.get(route.module)!.deps)
     res.statusCode = response.status
     response.headers.forEach((v, k) => res.setHeader(k, v))
     if (!response.body) return void res.end()
@@ -44,18 +48,20 @@ function localApi(mode: string): Plugin {
     res.end()
   }
 
-  const loadHandler = async () => {
+  const load = async (module: string) => {
     const { createJiti } = await import('jiti')
-    return createJiti(import.meta.url).import(new URL('./server/ai/handler.ts', import.meta.url).href)
+    return createJiti(import.meta.url).import(new URL(`.${module}`, import.meta.url).href)
   }
 
   const mount = (server: { middlewares: { use(path: string, fn: (req: IncomingMessage, res: ServerResponse) => void): unknown } }) => {
-    server.middlewares.use('/api/ai', (req, res) => {
-      handle(req, res).catch((e) => {
-        res.statusCode = 500
-        res.end(JSON.stringify({ error: String(e) }))
+    for (const [path, route] of Object.entries(ROUTES)) {
+      server.middlewares.use(path, (req, res) => {
+        handle(route, req, res).catch((e) => {
+          res.statusCode = 500
+          res.end(JSON.stringify({ error: String(e) }))
+        })
       })
-    })
+    }
   }
 
   return {
@@ -95,8 +101,8 @@ export default defineConfig(({ mode }) => ({
           { src: 'maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      // The API must always hit the network, never the offline app shell.
-      workbox: { navigateFallback: '/index.html', navigateFallbackDenylist: [/^\/api\//] },
+      // The API must always hit the network, never the offline app shell. push-sw.js: daily reminders (Web Push).
+      workbox: { navigateFallback: '/index.html', navigateFallbackDenylist: [/^\/api\//], importScripts: ['push-sw.js'] },
     }),
   ],
 }))
