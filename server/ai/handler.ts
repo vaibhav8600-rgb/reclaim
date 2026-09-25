@@ -1,7 +1,7 @@
-import { AI_TASKS, inputs, MAX_REQUEST_BYTES, outputs, type AiHealth, type AiTask } from '../../shared/ai'
-import { geminiProvider, ModelBusyError, ModelError, modelsFromEnv, type Provider } from './gemini'
-import { GROQ_MODELS, groqProvider, withBackup } from './groq'
-import { buildPrompt, SYSTEM } from './prompts'
+import { AI_TASKS, inputs, MAX_REQUEST_BYTES, outputs, type AiHealth, type AiTask } from '../../shared/ai.ts'
+import { geminiProvider, ModelBusyError, ModelError, modelsFromEnv, type Provider } from './gemini.ts'
+import { GROQ_MODELS, groqProvider, withBackup } from './groq.ts'
+import { buildPrompt, SYSTEM } from './prompts.ts'
 
 /**
  * POST /api/ai — run one AI task for the app's owner.

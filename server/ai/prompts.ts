@@ -1,4 +1,4 @@
-import { BODY_REGION_VALUES, DOCUMENT_KIND_VALUES, FACT_FLAGS, FACT_KINDS, FACT_SIDES, MEASUREMENT_KINDS, SYMPTOM_TYPES, TIME_OF_DAY, type AiInput, type AiTask } from '../../shared/ai'
+import { BODY_REGION_VALUES, DOCUMENT_KIND_VALUES, FACT_FLAGS, FACT_KINDS, FACT_SIDES, MEASUREMENT_KINDS, SYMPTOM_TYPES, TIME_OF_DAY, type AiInput, type AiTask } from '../../shared/ai.ts'
 
 /** Rules for every task. The model supports the person's own understanding; it is not their clinician. */
 export const SYSTEM = `You are the assistant inside Reclaim, a private recovery journal. You help one person understand their own logged data and prepare for appointments.
