@@ -4,7 +4,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
-import { handlePush, validSubscription, type PushDeps, type Stored } from '../server/push'
+import { handlePush, pushFromEnv, redisFromEnv, validSubscription, type PushDeps, type Stored } from '../server/push'
 
 const CLIENT = 'client-123.apps.googleusercontent.com'
 const OWNER = 'alex@example.com'
@@ -59,6 +59,17 @@ test.describe('server', () => {
     expect((await post({ action: 'test', endpoint: apple(9).endpoint })).status).toBe(404)
     await post({ action: 'unsubscribe', endpoint: apple(1).endpoint })
     expect(rows.size).toBe(0)
+  })
+
+  test('not set up: it says exactly which settings are missing (names only), whatever prefix Upstash was given', async () => {
+    const r = await handlePush(new Request('http://x/api/push', { method: 'POST', body: '{}' }), pushFromEnv({}))
+    expect(r.status).toBe(503)
+    expect((await r.json()).error).toMatch(/Missing in Vercel \(Production\): VITE_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, KV_REST_API_URL .*, CRON_SECRET/)
+    expect(pushFromEnv({ VITE_VAPID_PUBLIC_KEY: 'k', KV_REST_API_URL: 'https://r', KV_REST_API_TOKEN: 't', CRON_SECRET: 's' }).missing).toEqual(['VAPID_PRIVATE_KEY'])
+    expect(redisFromEnv({ KV_REST_API_URL: 'https://a', KV_REST_API_TOKEN: 'ta', KV_REST_API_READ_ONLY_TOKEN: 'ro' })).toEqual({ url: 'https://a', token: 'ta' })
+    expect(redisFromEnv({ REMINDERS_KV_REST_API_URL: 'https://b', REMINDERS_KV_REST_API_TOKEN: 'tb' })).toEqual({ url: 'https://b', token: 'tb' })
+    expect(redisFromEnv({ UPSTASH_REDIS_REST_URL: 'https://c', UPSTASH_REDIS_REST_TOKEN: 'tc' })).toEqual({ url: 'https://c', token: 'tc' })
+    expect(redisFromEnv({ SOME_URL: 'x' })).toEqual({})
   })
 
   test('the daily run needs the cron secret, carries no health data, and drops expired devices', async () => {

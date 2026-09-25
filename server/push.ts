@@ -32,6 +32,8 @@ export interface PushDeps {
   store?: SubStore
   send?: Send
   cronSecret?: string
+  /** Environment variables that aren't set, to say exactly what's missing (names only, never values). */
+  missing?: string[]
 }
 
 const MAX_DEVICES = 10
@@ -50,7 +52,9 @@ export function validSubscription(s: unknown): s is PushSubscriptionJson {
 }
 
 export async function handlePush(req: Request, deps: PushDeps): Promise<Response> {
-  if (!deps.store || !deps.send) return json(503, { error: 'Reminders aren’t set up on the server yet (see docs/PUSH_SETUP.md).' })
+  if (!deps.store || !deps.send) {
+    return json(503, { error: `Reminders aren’t set up on the server yet. Missing in Vercel (Production): ${deps.missing?.join(', ') || 'settings'} — then redeploy. See docs/PUSH_SETUP.md.` })
+  }
 
   // The daily run, from Vercel Cron
   if (req.method === 'GET') {
@@ -130,12 +134,27 @@ export function redisStore(url: string, token: string, key = 'reclaim:push'): Su
   }
 }
 
-/** Real dependencies from the environment. Upstash's Vercel integration names its variables KV_REST_API_*. */
+/**
+ * The Redis REST address and token. Upstash's Vercel integration names them KV_REST_API_URL / _TOKEN, or with a
+ * custom prefix chosen when connecting (e.g. REMINDERS_KV_REST_API_URL); an Upstash account gives UPSTASH_REDIS_REST_*.
+ */
+export function redisFromEnv(env: Record<string, string | undefined>) {
+  const urlKey = Object.keys(env).find((k) => /(^|_)(KV_REST_API_URL|UPSTASH_REDIS_REST_URL)$/.test(k) && env[k])
+  return urlKey ? { url: env[urlKey], token: env[urlKey.replace(/URL$/, 'TOKEN')] } : {}
+}
+
+/** Real dependencies from the environment. */
 export function pushFromEnv(env: Record<string, string | undefined>): PushDeps {
-  const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL
-  const token = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN
+  const { url, token } = redisFromEnv(env)
   const publicKey = env.VITE_VAPID_PUBLIC_KEY
   const privateKey = env.VAPID_PRIVATE_KEY
+  const missing = [
+    !publicKey && 'VITE_VAPID_PUBLIC_KEY',
+    !privateKey && 'VAPID_PRIVATE_KEY',
+    !url && 'KV_REST_API_URL (connect Upstash for Redis under Storage)',
+    url && !token && 'KV_REST_API_TOKEN',
+    !env.CRON_SECRET && 'CRON_SECRET',
+  ].filter((m): m is string => !!m)
   const ready = url && token && publicKey && privateKey
   if (ready) webpush.setVapidDetails(env.VAPID_SUBJECT || 'mailto:reclaim@example.com', publicKey, privateKey)
   return {
@@ -154,5 +173,6 @@ export function pushFromEnv(env: Record<string, string | undefined>): PushDeps {
         }
       : undefined,
     cronSecret: env.CRON_SECRET,
+    missing,
   }
 }
