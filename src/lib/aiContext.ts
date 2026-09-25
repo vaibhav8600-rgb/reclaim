@@ -6,7 +6,8 @@ import { factKey, factValue } from './facts'
 import { qualityLabel, sleepHours } from './daily'
 import { dailyTotals } from './nutrition'
 import { adjustments, candidates } from './plan'
-import { itemDone, startOfWeek, weeklyAdherence } from './rehab'
+import { reachLabel, reachTrend } from './reach'
+import { itemDone, settledByMorning, startOfWeek, weeklyAdherence } from './rehab'
 
 /**
  * A compact, privacy-minded summary of the log for the AI: only what a task needs,
@@ -85,6 +86,11 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
         averageEarlierHalf: avg(logs.filter((s) => s.recordedAt < half).map((s) => s.severity)),
         averageByTimeOfDay: { morning: byTime(5, 12), afternoon: byTime(12, 17), evening: byTime(17, 24) },
         daily: [...byDay].sort().map(([date, v]) => ({ date, avg: avg(v), logs: v.length })),
+        // Back or neck: how far down the leg or arm symptoms reach, and whether that's moving back towards the spine
+        reach: (() => {
+          const r = liveSymptoms.filter((s) => s.injuryId === i.id && s.reach !== undefined).sort((a, b) => a.recordedAt - b.recordedAt)
+          return r.length ? { latest: reachLabel(i.bodyRegion, r[r.length - 1].reach), trend: reachTrend(r) } : undefined
+        })(),
       }
     })
 
@@ -129,6 +135,8 @@ export async function buildAiContext({ days = 14, injuryId }: { days?: number; i
           sessionsInPeriod: liveSessions.length,
           averagePainBefore: avg(liveSessions.flatMap((s) => (s.painBefore === undefined ? [] : [s.painBefore]))),
           averagePainAfter: avg(liveSessions.flatMap((s) => (s.painAfter === undefined ? [] : [s.painAfter]))),
+          // Pain-monitoring model: had pain settled by the next morning?
+          nextMorning: { asked: liveSessions.filter((s) => settledByMorning(s) !== undefined).length, notSettled: liveSessions.filter((s) => settledByMorning(s) === false).length },
           loads: livePlan
             .map((p) => {
               const loads = sessions

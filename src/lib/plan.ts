@@ -1,7 +1,7 @@
 import type { Exercise, HealthFact, Injury, Prescription, RehabSession } from '../db/db'
 import { clampTo, EXERCISE_GUIDES, type ExerciseGuide } from './guide'
 import { suggestedCalories } from './nutrition'
-import { itemDone, plannedPerWeek } from './rehab'
+import { itemDone, plannedPerWeek, settledByMorning } from './rehab'
 
 /**
  * The rules-based half of the recovery plan: which vetted exercises suit the user's injuries, daily protein and
@@ -79,8 +79,8 @@ export type Check = { verdict: 'progress' | 'hold' | 'ease' | 'new'; reason: str
 
 /**
  * How one exercise went over the last 7 days. Pain during exercise up to 5/10 is acceptable if it settles
- * (Silbernagel 2007); ease off above that or if pain after sessions climbs; progress when it's comfortable
- * (at or below 3/10) and done most of the planned times.
+ * (Silbernagel 2007); ease off above that, if pain after sessions climbs, or if it hadn't settled by the next
+ * morning; progress when it's comfortable (at or below 3/10) and done most of the planned times.
  */
 export function weeklyCheck(p: Prescription, sessions: RehabSession[], now = Date.now()): Check {
   const week = sessions.filter((s) => !s.deletedAt && s.recordedAt > now - 7 * 86_400_000)
@@ -90,9 +90,13 @@ export function weeklyCheck(p: Prescription, sessions: RehabSession[], now = Dat
   const worst = during.length ? Math.max(...during) : undefined
   const avg = during.length ? during.reduce((a, b) => a + b, 0) / during.length : undefined
   const flare = items.some(({ s }) => s.painBefore !== undefined && s.painAfter !== undefined && s.painAfter - s.painBefore >= 2)
+  const unsettled = items.some(({ s }) => settledByMorning(s) === false)
   const done = items.length / Math.max(1, plannedPerWeek(p))
-  if ((worst !== undefined && worst > 5) || flare) {
-    return { verdict: 'ease', reason: worst !== undefined && worst > 5 ? `Pain reached ${worst}/10 during it this week (above 5/10).` : 'Pain rose by 2 or more after a session this week.' }
+  if ((worst !== undefined && worst > 5) || flare || unsettled) {
+    return {
+      verdict: 'ease',
+      reason: worst !== undefined && worst > 5 ? `Pain reached ${worst}/10 during it this week (above 5/10).` : flare ? 'Pain rose by 2 or more after a session this week.' : 'Pain hadn’t settled by the next morning after a session this week.',
+    }
   }
   if (avg !== undefined && avg <= 3 && done >= 0.7) return { verdict: 'progress', reason: `Done ${items.length} of ${plannedPerWeek(p)} times with pain around ${Math.round(avg)}/10.` }
   return { verdict: 'hold', reason: done < 0.7 ? `Done ${items.length} of ${plannedPerWeek(p)} planned times — keep going at this level.` : 'Keep going at this level.' }

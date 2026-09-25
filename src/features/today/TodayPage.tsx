@@ -17,6 +17,7 @@ import { isIOS, isStandalone } from '../../lib/platform'
 import { NERVE_SYMPTOMS, SAFETY_CHECK_AT, safetyCheckDue } from '../../lib/safety'
 import { dailySeries, round1, windowAverage } from '../../lib/stats'
 import { WeekCard } from '../rehab/components'
+import { FlareCard, FlareSuggestion, MorningCheck } from '../rehab/recovery'
 import type { StoredSummary } from '../insights/InsightsPage'
 
 export function TodayPage() {
@@ -278,24 +279,29 @@ function Nudges({ hasData, regions }: { hasData: boolean; regions: string[] }) {
   )
 }
 
-/** Rehab progress when there's a plan; a gentle prompt to add one otherwise. */
+/** Rehab: a flare-up or the morning-after check when there is one, then progress (or a prompt to add exercises). */
 function RehabToday({ hasInjuries }: { hasInjuries: boolean }) {
   const prescriptions = usePrescriptions()
   if (!prescriptions || !hasInjuries) return null
   return (
     <Section prominent title="Rehab" action={<MLink to="/rehab" className="text-accent">Plan</MLink>}>
-      {prescriptions.some((p) => p.active) ? (
-        <WeekCard compact />
-      ) : (
-        <MLink to="/rehab/library" className="card cell cell-press !py-4">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent"><Plus size={20} strokeWidth={2.4} /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-medium">Add your physio exercises</span>
-            <span className="block text-[0.875rem] text-muted">Track sets, reps and how your body responds.</span>
-          </span>
-          <ChevronRight size={18} className="text-faint" />
-        </MLink>
-      )}
+      <div className="space-y-3">
+        <FlareCard />
+        <FlareSuggestion />
+        <MorningCheck />
+        {prescriptions.some((p) => p.active) ? (
+          <WeekCard compact />
+        ) : (
+          <MLink to="/rehab/library" className="card cell cell-press !py-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent"><Plus size={20} strokeWidth={2.4} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">Add your physio exercises</span>
+              <span className="block text-[0.875rem] text-muted">Track sets, reps and how your body responds.</span>
+            </span>
+            <ChevronRight size={18} className="text-faint" />
+          </MLink>
+        )}
+      </div>
     </Section>
   )
 }

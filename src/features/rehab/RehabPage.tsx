@@ -1,15 +1,18 @@
-import { ClipboardList, Dumbbell, Library, Plus } from 'lucide-react'
-import { useExerciseMap, useInjuryMap, usePrescriptions, useSessions } from '../../db/hooks'
+import { ClipboardList, Dumbbell, Flame, Library, Plus } from 'lucide-react'
+import { useExerciseMap, useInjuryMap, useMeta, usePrescriptions, useSessions } from '../../db/hooks'
 import { ENTRY_INSET, EntryRow } from '../../components/EntryRow'
 import { MLink } from '../../components/MLink'
 import { EmptyState, GlassButton, Group, IconTile, NavBar, Row, Section } from '../../components/ui'
+import { FLARE_KEY, type Flare } from '../../lib/rehab'
 import { PlanRow, WeekCard } from './components'
+import { FlareCard, startFlare } from './recovery'
 
 export function RehabPage() {
   const prescriptions = usePrescriptions()
   const sessions = useSessions()
   const exercises = useExerciseMap()
   const injuries = useInjuryMap()
+  const flare = useMeta<Flare | null>(FLARE_KEY)
   if (!prescriptions || !sessions) return null
 
   const active = prescriptions.filter((p) => p.active)
@@ -39,9 +42,11 @@ export function RehabPage() {
             <WeekCard />
           </Section>
 
-          <Section>
+          <Section className="space-y-3">
+            {flare && <FlareCard />}
             <Group inset="3.625rem">
               <Row icon={<IconTile icon={ClipboardList} color="green" />} title="Recovery Plan" subtitle="Suggestions from your logs, and this week’s check" to="/plan" />
+              {!flare && <Row icon={<IconTile icon={Flame} color="orange" />} title="Having a Flare-Up?" subtitle="Gentler days, half the usual sets, until it settles" onClick={startFlare} />}
             </Group>
           </Section>
 

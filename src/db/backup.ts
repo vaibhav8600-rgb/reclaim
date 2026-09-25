@@ -59,6 +59,7 @@ const schemas = {
     type: z.string(),
     severity: z.number().min(0).max(10),
     recordedAt: z.number(),
+    reach: z.number().int().min(0).max(4).optional(),
     trigger: z.string().optional(),
     notes: z.string().optional(),
     source,
@@ -105,6 +106,7 @@ const schemas = {
     injuryId: z.string().optional(),
     painBefore: z.number().min(0).max(10).optional(),
     painAfter: z.number().min(0).max(10).optional(),
+    morningPain: z.number().min(0).max(10).optional(),
     items: z.array(
       z.object({
         exerciseId: z.string(),
