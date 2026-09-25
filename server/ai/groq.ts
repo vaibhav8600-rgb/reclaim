@@ -3,7 +3,7 @@
  * Text only — it can't read PDFs or images. Not streamed: Groq's structured outputs don't support streaming,
  * and it answers in a second or two anyway.
  */
-import { ModelBusyError, ModelError, type Provider } from './gemini'
+import { ModelBusyError, ModelError, type Provider } from './gemini.ts'
 
 export const GROQ_MODELS = ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile']
 const ATTEMPT_TIMEOUT_MS = 30_000

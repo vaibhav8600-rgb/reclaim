@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { mockAi } from './fake-ai'
 import { FakeDrive } from './fake-google'
@@ -47,4 +47,12 @@ test('the production bundle contains no secrets', async () => {
     expect(js, f).not.toMatch(/GOCSPX-[\w-]{10,}/) // OAuth client secret
     expect(js, f).not.toMatch(/AIza[\w-]{30,}/) // Google API key
   }
+})
+
+test('the AI function’s relative imports name their .ts file, so Vercel’s unbundled output loads in Node', () => {
+  // Vercel converts api/ file by file (TypeScript 7) and rewrites "./x.ts" to "./x.js"; an extensionless import
+  // stays extensionless and Node's ESM loader can't find it, so the function crashes with a bare 500.
+  const files = ['api', 'server/ai', 'shared'].flatMap((dir) => readdirSync(dir).filter((f) => f.endsWith('.ts')).map((f) => `${dir}/${f}`))
+  const bad = files.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/from '(\.{1,2}\/[^']*)'/g)].filter((m) => !m[1].endsWith('.ts')).map((m) => `${f}: ${m[1]}`))
+  expect(bad).toEqual([])
 })
