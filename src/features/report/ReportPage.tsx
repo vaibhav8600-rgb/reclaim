@@ -15,6 +15,7 @@ import { buildAiContext } from '../../lib/aiContext'
 import { injuryPlace, kindInfo, sideLabel, statusLabel, symptomLabel } from '../../lib/constants'
 import { dayKey, daysAgo, daysBetween, formatMediumDate, fromDayKey } from '../../lib/dates'
 import { checkInTrend, toleranceLabel } from '../../lib/checkin'
+import { medicineList } from '../../lib/facts'
 import { reachLabel, reachTrend } from '../../lib/reach'
 import { itemDone, plannedPerWeek, startOfWeek } from '../../lib/rehab'
 import { dailySeries } from '../../lib/stats'
@@ -47,7 +48,7 @@ export function ReportPage() {
 
   const data = useLiveQuery(async () => {
     if (!chosen) return undefined
-    const [symptoms, measurements, sessions, prescriptions, exercises, documents, meals, checkins] = await Promise.all([
+    const [symptoms, measurements, sessions, prescriptions, exercises, documents, meals, checkins, facts] = await Promise.all([
       db.symptoms.where('recordedAt').aboveOrEqual(from).toArray(),
       db.measurements.where('injuryId').equals(chosen).toArray(),
       db.sessions.where('recordedAt').aboveOrEqual(from).toArray(),
@@ -56,6 +57,7 @@ export function ReportPage() {
       db.documents.where('injuryId').equals(chosen).toArray(),
       db.meals.where('recordedAt').aboveOrEqual(from).toArray(),
       db.checkins.where('recordedAt').aboveOrEqual(from).toArray(),
+      db.facts.toArray(),
     ])
     return {
       symptoms: symptoms.filter((s) => alive(s) && s.injuryId === chosen),
@@ -66,6 +68,7 @@ export function ReportPage() {
       documents: documents.filter(alive).sort((a, b) => b.date.localeCompare(a.date)),
       meals: meals.filter(alive),
       checkins: checkins.filter(alive),
+      medicines: medicineList(facts.filter(alive)).recent,
     }
   }, [chosen, from])
 
@@ -200,6 +203,12 @@ export function ReportPage() {
                 ['Trend', reachTrend(reached) && `${reachTrendWord[reachTrend(reached)!]} (${reached.length} logs)`],
               ]}
             />
+          </ReportSection>
+        )}
+
+        {data.medicines.length > 0 && (
+          <ReportSection title="Medicines (prescribed in the last 3 months, from the patient’s records)">
+            <Facts rows={data.medicines.map((m): [string, string] => [m.name, [m.latest.detail, formatMediumDate(fromDayKey(m.latest.date))].filter(Boolean).join(' · ')])} />
           </ReportSection>
         )}
 

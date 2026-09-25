@@ -1,4 +1,5 @@
 import { outputs, type AiHealth, type AiInput, type AiOutput, type AiTask } from '../../shared/ai'
+import { AiCancelled, confirmAiSend } from './aiPreview'
 import { parsePartialJson } from '../../shared/partial-json'
 import { getMeta, setMeta } from '../db/repo'
 import { cachedToken } from './google'
@@ -34,10 +35,12 @@ export async function aiHealth(): Promise<AiHealth> {
  * Run an AI task. With `onPartial`, the answer streams: it's called with the half-written answer as it grows
  * (fields may be missing or cut short), so the UI can show text within a second or two instead of waiting.
  */
-export async function runAi<T extends AiTask>(task: T, input: AiInput<T>, onPartial?: (partial: Partial<AiOutput<T>>) => void): Promise<AiOutput<T>> {
+export async function runAi<T extends AiTask>(task: T, input: AiInput<T>, onPartial?: (partial: Partial<AiOutput<T>>) => void, opts: { previewed?: boolean } = {}): Promise<AiOutput<T>> {
   const token = cachedToken()
   if (!token) throw new AiSignInRequired()
   if (!navigator.onLine) throw new Error('You’re offline. AI needs a connection.')
+  // "Show what's sent" (Settings → AI): nothing leaves the phone until the user has seen it and tapped Send.
+  if (!opts.previewed && !(await confirmAiSend({ task, input }))) throw new AiCancelled()
   let r: Response
   try {
     r = await fetch('/api/ai', {

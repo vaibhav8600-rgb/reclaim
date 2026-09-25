@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, type ComponentType } from 'react'
+import { AiPreviewHost } from './components/AiPreviewHost'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { Layout } from './components/Layout'
 import { Toaster } from './components/Toaster'
@@ -126,6 +127,7 @@ export function App() {
         </Routes>
       </Suspense>
       <Toaster />
+      <AiPreviewHost />
     </BrowserRouter>
   )
 }

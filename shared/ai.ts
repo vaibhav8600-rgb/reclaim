@@ -98,6 +98,8 @@ export const extractedFact = z.object({
   bodyRegion: z.enum(BODY_REGION_VALUES).optional().catch(undefined),
   side: z.enum(FACT_SIDES).optional().catch(undefined),
   evidence: loose(300).catch(''),
+  /** The page it's on, for a document of several pages. */
+  page: z.number().int().min(1).max(500).optional().catch(undefined),
 })
 export type ExtractedFact = z.infer<typeof extractedFact>
 
@@ -133,7 +135,7 @@ export const outputs = {
   'summarize-document': z.object({
     readable: z.enum(['yes', 'partly', 'no']).catch('partly'),
     summary: loose(1200).catch(''),
-    findings: keepValid(z.object({ label: loose(120), detail: loose(400) }), 15),
+    findings: keepValid(z.object({ label: loose(120), detail: loose(400), page: z.number().int().min(1).max(500).optional().catch(undefined) }), 15),
     questions: keepValid(loose(400), 8),
     /** What the document itself says it is, used to file records added in bulk. */
     document: z

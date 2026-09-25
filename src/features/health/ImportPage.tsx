@@ -1,13 +1,16 @@
 import { useRef, useState } from 'react'
 import { FileText, Files, X } from 'lucide-react'
+import { MAX_DOCUMENT_BYTES_FOR_AI } from '../../../shared/ai'
 import { db } from '../../db/db'
 import { isOpenInjury, useInjuries } from '../../db/hooks'
 import { save } from '../../db/repo'
 import { dayKey } from '../../lib/dates'
 import { queueForReading } from '../../lib/health'
 import { useBack, useGo } from '../../lib/nav'
+import { photosToPdf } from '../../lib/pdf'
 import { formatBytes, requestPersistence } from '../../lib/platform'
 import { toast } from '../../lib/toast'
+import { Group, Toggle } from '../../components/ui'
 import { InjuryPicker, SheetForm } from '../log/shared'
 import { DOCUMENT_ACCEPT, MAX_DOCUMENT_BYTES, titleFromFile } from '../documents/kinds'
 
@@ -24,6 +27,8 @@ export function ImportPage() {
   const [refused, setRefused] = useState<string[]>([])
   const [injuryId, setInjuryId] = useState<string>()
   const [saving, setSaving] = useState(false)
+  // Several photos of one report: saved as one PDF record, a page per photo, in the order chosen
+  const [onePdf, setOnePdf] = useState(false)
 
   if (!injuries) return null
 
@@ -35,10 +40,25 @@ export function ImportPage() {
     if (input.current) input.current.value = '' // choosing the same file again still fires
   }
 
+  const photos = files.filter((f) => f.type.startsWith('image/'))
+  const combine = onePdf && photos.length > 1
+  const count = combine ? files.length - photos.length + 1 : files.length
+
   async function submit() {
     setSaving(true)
     const ids: string[] = []
-    for (const file of files) {
+    let records: File[] = files
+    if (combine) {
+      try {
+        const pdf = await photosToPdf(photos, MAX_DOCUMENT_BYTES_FOR_AI)
+        const name = `${titleFromFile(photos[0].name) || 'Report'} (${photos.length} pages).pdf`
+        records = [new File([pdf], name, { type: 'application/pdf' }), ...files.filter((f) => !photos.includes(f))]
+      } catch {
+        setSaving(false)
+        return toast('Couldn’t put those photos together. Try adding them as separate records.')
+      }
+    }
+    for (const file of records) {
       const bytes = await file.arrayBuffer() // read before the transaction: IndexedDB transactions can't await other work
       ids.push(
         await db.transaction('rw', db.documents, db.files, async () => {
@@ -70,7 +90,7 @@ export function ImportPage() {
 
       {files.length > 0 && (
         <div>
-          <span className="section-label block">{files.length} {files.length === 1 ? 'Record' : 'Records'}</span>
+          <span className="section-label block">{count} {count === 1 ? 'Record' : 'Records'}</span>
           <div className="card rows overflow-hidden" style={{ ['--inset' as string]: '3.625rem' }}>
             {files.map((f, i) => (
               <div key={`${f.name}|${f.size}`} className="cell">
@@ -85,6 +105,12 @@ export function ImportPage() {
               </div>
             ))}
           </div>
+          {photos.length > 1 && (
+            <Group className="mt-3">
+              <Toggle label="Photos Are Pages of One Report" checked={onePdf} onChange={setOnePdf} />
+            </Group>
+          )}
+          {combine && <p className="section-footer">The {photos.length} photos become one record, a page each, in the order above — and AI reads them together.</p>}
           <p className="section-footer">After you tap ✓, AI can read each record for its title, type and date, and the lab results, medicines, diagnoses and scan findings in it. You check everything before it joins your Health Profile.</p>
         </div>
       )}

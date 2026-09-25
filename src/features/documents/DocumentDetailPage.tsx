@@ -3,12 +3,13 @@ import { useParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Cloud, CloudOff, Download, HeartPulse, Share, Sparkles } from 'lucide-react'
 import type { AiOutput } from '../../../shared/ai'
-import { db } from '../../db/db'
+import { db, type MedicalDocument } from '../../db/db'
 import { useInjuryMap } from '../../db/hooks'
 import { alive, restore, save, softDelete } from '../../db/repo'
 import { AiAction } from '../../components/ai'
 import { GlassButton, Group, IconTile, NavBar, Row, Section } from '../../components/ui'
 import { formatMediumDate, fromDayKey } from '../../lib/dates'
+import { compareReports } from '../../lib/facts'
 import { useGo } from '../../lib/nav'
 import { formatBytes, isTouch } from '../../lib/platform'
 import { readDocument } from '../../lib/health'
@@ -135,6 +136,7 @@ export function DocumentDetailPage() {
                     {doc.aiSummary.findings.map((f, i) => (
                       <li key={i}>
                         <span className="font-semibold">{f.label}:</span> {f.detail}
+                        {f.page && <span className="text-muted"> (page {f.page})</span>}
                       </li>
                     ))}
                   </ul>
@@ -191,6 +193,8 @@ export function DocumentDetailPage() {
         )}
       </Section>
 
+      <SinceLastTime doc={doc} />
+
       <Section title="Details" footer={doc.notes}>
         <Group>
           {doc.injuryId && <Row title="For" value={injuries.get(doc.injuryId)?.name ?? 'Removed injury'} />}
@@ -213,5 +217,43 @@ export function DocumentDetailPage() {
         </Group>
       </Section>
     </div>
+  )
+}
+
+const FLAG_TONE: Record<string, string> = { low: 'text-tile-orange', high: 'text-danger', abnormal: 'text-danger' }
+const flagged = (v: string, flag?: string) => (flag && flag !== 'normal' ? <span className={`font-semibold ${FLAG_TONE[flag] ?? ''}`}>{v} ({flag})</span> : <span>{v}</span>)
+
+/** This record against the previous one of the same kind: what changed, what's new, what's no longer listed. */
+function SinceLastTime({ doc }: { doc: MedicalDocument }) {
+  const data = useLiveQuery(async () => {
+    const facts = (await db.facts.toArray()).filter(alive)
+    const mine = facts.filter((f) => f.documentId === doc.id)
+    if (!mine.length) return null
+    const withFacts = new Set(facts.map((f) => f.documentId))
+    const earlier = (await db.documents.toArray())
+      .filter((d) => alive(d) && d.id !== doc.id && d.kind === doc.kind && withFacts.has(d.id) && (d.date < doc.date || (d.date === doc.date && d.createdAt < doc.createdAt)))
+      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)[0]
+    return earlier ? { earlier, ...compareReports(mine, facts.filter((f) => f.documentId === earlier.id)) } : null
+  }, [doc.id, doc.kind, doc.date])
+  if (!data) return null
+  const { earlier, changed, added, gone, same } = data
+  if (!changed.length && !added.length && !gone.length) return null
+  return (
+    <Section prominent title="Since Last Time" footer={`Compared with the facts you confirmed from the previous ${kindOf(doc.kind).label.toLowerCase()}${same ? `; ${same} unchanged` : ''}.`}>
+      <Group>
+        <Row title={earlier.title} subtitle={formatMediumDate(fromDayKey(earlier.date))} to={`/documents/${earlier.id}`} />
+        {changed.map((c) => (
+          <div key={c.name} className="cell !items-start" data-testid="report-change">
+            <span className="min-w-0 flex-1">
+              <span className="block">{c.name}</span>
+              <span className="block text-[0.9375rem] text-muted">{flagged(c.before, c.beforeFlag)} → {flagged(c.after, c.afterFlag)}</span>
+            </span>
+            {c.trend && <span className="shrink-0 text-muted" aria-label={c.trend === 'up' ? 'went up' : 'went down'}>{c.trend === 'up' ? '↑' : '↓'}</span>}
+          </div>
+        ))}
+        {added.length > 0 && <Row title="New this time" subtitle={added.map((f) => f.name).join(', ')} />}
+        {gone.length > 0 && <Row title={doc.kind === 'prescription' ? 'No longer prescribed' : 'Not on this one'} subtitle={gone.map((f) => f.name).join(', ')} />}
+      </Group>
+    </Section>
   )
 }

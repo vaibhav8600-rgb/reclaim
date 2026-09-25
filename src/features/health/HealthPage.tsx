@@ -11,7 +11,7 @@ import { buildHealthContext } from '../../lib/aiContext'
 import { MLink } from '../../components/MLink'
 import { EmptyState, GlassButton, Group, IconTile, NavBar, Row, Section } from '../../components/ui'
 import { formatMediumDate, fromDayKey, relativeAge } from '../../lib/dates'
-import { factKey, factValue } from '../../lib/facts'
+import { factKey, factValue, medicineList, type Medicine } from '../../lib/facts'
 import { needsReading, needsReview, readDocuments, useReadProgress } from '../../lib/health'
 import { DocumentTile } from '../documents/kinds'
 import { FACT_KIND_INFO, FACT_ORDER, FlagPill } from './kinds'
@@ -69,6 +69,7 @@ export function HealthPage() {
           {FACT_ORDER.map((kind) => {
             const list = facts.filter((f) => f.kind === kind)
             if (!list.length) return null
+            if (kind === 'medication') return <Medicines key={kind} facts={list} />
             return (
               <Section key={kind} prominent title={FACT_KIND_INFO[kind].plural}>
                 <Group inset="3.625rem">{kind === 'lab' ? <LabRows facts={list} /> : list.map((f) => <FactRow key={f.id} fact={f} />)}</Group>
@@ -146,6 +147,36 @@ function FactRow({ fact }: { fact: HealthFact }) {
       value={fact.flag ? <FlagPill flag={fact.flag} /> : undefined}
       to={`/health/facts/${fact.id}`}
     />
+  )
+}
+
+/** One row per medicine (its latest dose), recent ones first; older ones in their own list. */
+function Medicines({ facts }: { facts: HealthFact[] }) {
+  const { recent, earlier } = medicineList(facts)
+  const info = FACT_KIND_INFO.medication
+  const rows = (list: Medicine[]) =>
+    list.map((m) => (
+      <Row
+        key={m.latest.id}
+        icon={<IconTile icon={info.icon} color={info.color} />}
+        title={m.name}
+        subtitle={[m.latest.detail, `${formatMediumDate(fromDayKey(m.latest.date))}${m.count > 1 ? ` · on ${m.count} records` : ''}`].filter(Boolean).join(' · ')}
+        to={`/health/facts/${m.latest.id}`}
+      />
+    ))
+  return (
+    <>
+      {recent.length > 0 && (
+        <Section prominent title="Medicines" footer="Prescribed in the last 3 months, from records you’ve checked. Ask your doctor before starting or stopping anything.">
+          <Group inset="3.625rem">{rows(recent)}</Group>
+        </Section>
+      )}
+      {earlier.length > 0 && (
+        <Section prominent title="Earlier Medicines">
+          <Group inset="3.625rem">{rows(earlier)}</Group>
+        </Section>
+      )}
+    </>
   )
 }
 

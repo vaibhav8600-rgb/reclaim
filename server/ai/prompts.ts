@@ -116,14 +116,15 @@ Facts: every fact the document records, exactly as printed. Never add a fact the
 - imaging: one per impression or conclusion; name: the scan and body part (e.g. "MRI right elbow"); detail: the finding in the report's words.
 - procedure: surgeries, injections, therapies done; allergy: allergies stated.
 range: the reference range exactly as printed, including every band when there are several.
-evidence: the exact printed words the fact came from (the row or phrase, up to about 100 characters; not a paraphrase).`,
+evidence: the exact printed words the fact came from (the row or phrase, up to about 100 characters; not a paraphrase).
+page: for a document of more than one page, the page number (starting at 1) each finding and fact is on; leave it out for a single page.`,
         file: { mimeType: i.mimeType, data: i.data },
         maxOutputTokens: 10_000,
         schema: obj(
           {
             readable: str(undefined, { enum: ['yes', 'partly', 'no'] }),
             summary: str('3–6 sentences.'),
-            findings: arr(obj({ label: str(), detail: str() }, ['label', 'detail']), 15),
+            findings: arr(obj({ label: str(), detail: str(), page: { type: 'integer' } }, ['label', 'detail']), 15),
             questions: arr(str(), 6),
             document: obj(
               { title: str('Max 60 characters.'), kind: str(undefined, { enum: DOCUMENT_KIND_VALUES }), date: str('YYYY-MM-DD, or "" if not printed.') },
@@ -144,6 +145,7 @@ evidence: the exact printed words the fact came from (the row or phrase, up to a
                   bodyRegion: str('For a condition of one body part.', { enum: BODY_REGION_VALUES }),
                   side: str(undefined, { enum: FACT_SIDES }),
                   evidence: str('The exact printed words, at most about 100 characters.'),
+                  page: { type: 'integer', description: 'Page number, for a document of several pages.' },
                 },
                 ['kind', 'name', 'evidence'],
               ),

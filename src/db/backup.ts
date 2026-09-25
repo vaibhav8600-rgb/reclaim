@@ -134,7 +134,7 @@ const schemas = {
       .object({
         readable: z.enum(['yes', 'partly', 'no']),
         summary: z.string(),
-        findings: z.array(z.object({ label: z.string(), detail: z.string() })),
+        findings: z.array(z.object({ label: z.string(), detail: z.string(), page: z.number().int().min(1).optional() })),
         questions: z.array(z.string()),
         model: z.string().optional(),
         createdAt: z.number(),
@@ -180,6 +180,7 @@ const schemas = {
     date: z.string(),
     documentId: z.string().optional(),
     evidence: z.string().optional(),
+    page: z.number().int().min(1).optional(),
     bodyRegion: z.string().optional(),
     side: z.enum(['left', 'right', 'both']).optional(),
     source,

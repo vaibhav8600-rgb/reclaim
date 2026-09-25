@@ -138,7 +138,7 @@ function FactCheck({ fact, kept, onChange }: { fact: ExtractedFact; kept: boolea
         {fact.range && <span className="block text-[0.8125rem] text-muted">Range {fact.range}</span>}
         {fact.kind === 'condition' && fact.bodyRegion && <span className="block text-[0.8125rem] text-muted">{injuryPlace({ bodyRegion: fact.bodyRegion, side: fact.side ?? 'none' })}</span>}
         {fact.detail && !(value && fact.value === undefined) && <span className="block text-[0.875rem] text-muted">{fact.detail}</span>}
-        <span className="mt-0.5 block text-[0.8125rem] text-faint italic">“{fact.evidence}”</span>
+        <span className="mt-0.5 block text-[0.8125rem] text-faint italic">“{fact.evidence}”{fact.page && <span className="not-italic"> · page {fact.page}</span>}</span>
       </span>
     </label>
   )
