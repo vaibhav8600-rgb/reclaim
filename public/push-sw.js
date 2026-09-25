@@ -19,7 +19,7 @@ self.reclaimReminder = function (data, now) {
   if (sessions.some((s) => s.recordedAt >= yesterday && s.recordedAt < today && s.morningPain === undefined)) {
     items.push({ text: 'How did it feel after yesterday’s rehab? One tap on Today.', url: '/' })
   }
-  if ((data.prescriptions || []).some((p) => alive(p) && p.active) && !sessions.some((s) => s.recordedAt >= today)) {
+  if ((data.prescriptions || []).some((p) => alive(p) && p.active) && !sessions.some((s) => s.kind !== 'workout' && s.recordedAt >= today)) {
     items.push({ text: 'Today’s rehab exercises are waiting.', url: '/rehab' })
   }
   const lastCheckIn = Math.max(0, ...(data.checkins || []).filter(alive).map((c) => c.recordedAt))

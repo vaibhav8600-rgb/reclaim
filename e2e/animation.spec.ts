@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { STARTER_EXERCISES } from '../src/lib/exercises'
+import { FITNESS_EXERCISES, STARTER_EXERCISES } from '../src/lib/exercises'
 import { EXERCISE_GUIDES } from '../src/lib/guide'
 import { importBackup, injuriesBackup } from './helpers'
 
@@ -30,11 +30,11 @@ test('with Reduce Motion, the start and key positions are shown still, side by s
   await expect(page.getByRole('button', { name: /Pause how to do/ })).toHaveCount(0)
 })
 
-test('every starter exercise has a demonstration; custom exercises simply don’t', async ({ page }, info) => {
+test('every starter and fitness exercise has a demonstration; custom exercises simply don’t', async ({ page }, info) => {
   test.skip(info.project.name !== 'iphone-chromium', 'the same drawing code in every engine; one is enough for the full sweep')
-  test.setTimeout(90_000) // 24 screens in one test
+  test.setTimeout(240_000) // 55 screens in one test
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  for (const e of STARTER_EXERCISES) {
+  for (const e of [...STARTER_EXERCISES, ...FITNESS_EXERCISES]) {
     await page.goto(`/rehab/exercises/${e.id}`)
     await expect(page.getByRole('img', { name: `How to do ${e.name}`, exact: false }), e.id).toBeVisible()
   }

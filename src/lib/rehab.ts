@@ -12,6 +12,9 @@ export function startOfWeek(ms: number) {
 
 export const plannedPerWeek = (p: Prescription) => p.timesPerDay * p.daysPerWeek
 
+/** Rehab sessions only: workouts (fitness) don't count towards the rehab plan. */
+export const isRehab = (s: Pick<RehabSession, 'kind'>) => s.kind !== 'workout'
+
 /** An exercise counts as done in a session when at least one set was completed. */
 export const itemDone = (i: SessionItem) => i.sets.some((s) => s.done)
 
@@ -29,7 +32,7 @@ export function weeklyAdherence(prescriptions: Prescription[], sessions: RehabSe
   const active = prescriptions.filter((p) => p.active)
   const planned = active.reduce((n, p) => n + plannedPerWeek(p), 0)
   const done = sessions
-    .filter((s) => s.recordedAt >= from && s.recordedAt < from + 7 * DAY)
+    .filter((s) => isRehab(s) && s.recordedAt >= from && s.recordedAt < from + 7 * DAY)
     .reduce((n, s) => n + s.items.filter(itemDone).length, 0)
   return { planned, done }
 }
@@ -38,7 +41,7 @@ export function weeklyAdherence(prescriptions: Prescription[], sessions: RehabSe
 export function todayAdherence(prescriptions: Prescription[], sessions: RehabSession[], now = Date.now()): Adherence {
   const from = startOfDay(now)
   const planned = prescriptions.filter((p) => p.active).reduce((n, p) => n + p.timesPerDay, 0)
-  const done = sessions.filter((s) => s.recordedAt >= from).reduce((n, s) => n + s.items.filter(itemDone).length, 0)
+  const done = sessions.filter((s) => isRehab(s) && s.recordedAt >= from).reduce((n, s) => n + s.items.filter(itemDone).length, 0)
   return { planned, done }
 }
 
@@ -99,9 +102,17 @@ export interface SessionDraft {
   painAfter?: number
   items: SessionItem[]
   notes?: string
+  /** A workout: its template, name, rest between sets and the effort rating */
+  kind?: 'workout'
+  workoutId?: string
+  name?: string
+  restSeconds?: number
+  effort?: number
 }
 
 export const DRAFT_KEY = 'sessionDraft'
+/** A workout in progress, kept apart from a rehab session in progress */
+export const WORKOUT_DRAFT_KEY = 'workoutDraft'
 
 /**
  * Had the pain settled by the next morning? At most 5/10, and no more than 1 above the pain before the session
@@ -130,3 +141,11 @@ export interface Flare {
 export const flareDay = (f: Flare, now = Date.now()) => Math.round((startOfDay(now) - startOfDay(f.startedAt)) / 86_400_000) + 1
 /** A gentler session: half the usual sets (at least one), same reps or hold. */
 export const flareItems = (items: SessionItem[]) => items.map((i) => ({ ...i, sets: i.sets.slice(0, Math.max(1, Math.ceil(i.sets.length / 2))) }))
+
+/* ─────────── workouts ─────────── */
+
+/** Minutes from start to finish, and the weight moved (kg × reps, for sets with a weight). */
+export function sessionStats(s: Pick<RehabSession, 'startedAt' | 'recordedAt' | 'items'>) {
+  const volume = s.items.flatMap((i) => i.sets.filter((x) => x.done && x.load)).reduce((n, x) => n + x.load! * x.amount, 0)
+  return { minutes: Math.max(1, Math.round((s.recordedAt - s.startedAt) / 60_000)), volume: Math.round(volume) }
+}

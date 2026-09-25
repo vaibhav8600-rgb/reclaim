@@ -9,17 +9,20 @@ import { formatTime } from '../../lib/dates'
 import { haptic } from '../../lib/haptics'
 import { useBack } from '../../lib/nav'
 import { requestPersistence } from '../../lib/platform'
-import { DRAFT_KEY, FLARE_KEY, flareItems, itemDone, itemsFromPlan, type Flare, type SessionDraft } from '../../lib/rehab'
+import { newBests } from '../../lib/fitness'
+import { DRAFT_KEY, FLARE_KEY, flareItems, itemDone, itemsFromPlan, sessionStats, WORKOUT_DRAFT_KEY, type Flare, type SessionDraft } from '../../lib/rehab'
 import { toast } from '../../lib/toast'
 import { DeleteRow, SheetForm } from '../log/shared'
 import { AdjustNotes } from './AdjustNotes'
 import { CompactScale } from './components'
+import { RestTimer } from './RestTimer'
 import { ExerciseAnimation, hasAnimation } from './ExerciseAnimation'
 
 export function SessionPage() {
   const [params] = useSearchParams()
   const editId = params.get('id') ?? undefined
   const injuryParam = params.get('injury') ?? undefined
+  const workoutParam = params.get('workout') ?? undefined
   const back = useBack('/rehab', 'sheet-down')
   const exercises = useExerciseMap()
   const library = useExercises()
@@ -28,6 +31,10 @@ export function SessionPage() {
   const [s, setS] = useState<SessionDraft>()
   const recordedAt = useRef<number>(undefined)
   const touched = useRef(false)
+  const [restUntil, setRestUntil] = useState<number>()
+  // A workout (fitness) keeps its own draft, so it never overwrites a rehab session in progress.
+  const workout = !!workoutParam || s?.kind === 'workout'
+  const draftKey = workout ? WORKOUT_DRAFT_KEY : DRAFT_KEY
 
   useEffect(() => {
     ;(async () => {
@@ -35,24 +42,30 @@ export function SessionPage() {
         const x = await db.sessions.get(editId)
         if (x) {
           recordedAt.current = x.recordedAt
-          setS({ id: x.id, startedAt: x.startedAt, injuryId: x.injuryId, painBefore: x.painBefore, painAfter: x.painAfter, items: x.items, notes: x.notes })
+          setS({ id: x.id, startedAt: x.startedAt, injuryId: x.injuryId, painBefore: x.painBefore, painAfter: x.painAfter, items: x.items, notes: x.notes, kind: x.kind, workoutId: x.workoutId, name: x.name, effort: x.effort })
         }
         return
       }
-      const draft = await getMeta<SessionDraft>(DRAFT_KEY)
-      if (draft) return setS(draft)
+      const draft = await getMeta<SessionDraft>(workoutParam ? WORKOUT_DRAFT_KEY : DRAFT_KEY)
+      if (draft && (!workoutParam || draft.workoutId === workoutParam)) return setS(draft)
+      const flaring = !!(await getMeta<Flare | null>(FLARE_KEY))
+      if (workoutParam) {
+        const w = await db.workouts.get(workoutParam)
+        const items = (w?.items ?? []).map((i) => ({ exerciseId: i.exerciseId, sets: Array.from({ length: i.sets }, () => ({ amount: i.target, load: i.load, done: false })) }))
+        return setS({ startedAt: Date.now(), kind: 'workout', workoutId: workoutParam, name: w?.name ?? 'Workout', restSeconds: w?.restSeconds ?? 90, items: flaring ? flareItems(items) : items })
+      }
       const plan = (await db.prescriptions.toArray()).filter(alive)
       const items = itemsFromPlan(plan, injuryParam)
       // During a flare-up, a new session starts at half the usual sets.
-      setS({ startedAt: Date.now(), injuryId: injuryParam, items: (await getMeta<Flare | null>(FLARE_KEY)) ? flareItems(items) : items })
+      setS({ startedAt: Date.now(), injuryId: injuryParam, items: flaring ? flareItems(items) : items })
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId])
 
   // New sessions are saved as a draft on every change, so nothing is lost if the app closes.
   useEffect(() => {
-    if (s && touched.current && !editId) void setMeta(DRAFT_KEY, s)
-  }, [s, editId])
+    if (s && touched.current && !editId) void setMeta(draftKey, s)
+  }, [s, editId, draftKey])
 
   if (!s || !library) return null
 
@@ -67,12 +80,14 @@ export function SessionPage() {
 
   function addExercise(exerciseId: string) {
     const e = exercises.get(exerciseId)
-    update((d) => ({ ...d, items: [...d.items, { exerciseId, sets: Array.from({ length: 3 }, () => ({ amount: e?.mode === 'time' ? 30 : 10, done: false })) }] }))
+    const amount = e?.category === 'cardio' ? 1200 : e?.mode === 'time' ? 30 : 10
+    update((d) => ({ ...d, items: [...d.items, { exerciseId, sets: Array.from({ length: e?.category === 'cardio' ? 1 : 3 }, () => ({ amount, done: false })) }] }))
   }
 
   async function finish() {
     haptic()
-    await save(db.sessions, {
+    const before = (await db.sessions.toArray()).filter((x) => x.id !== s!.id)
+    const session = {
       id: s!.id,
       startedAt: s!.startedAt,
       recordedAt: recordedAt.current ?? Date.now(),
@@ -81,11 +96,16 @@ export function SessionPage() {
       painAfter: s!.painAfter,
       items: s!.items,
       notes: s!.notes?.trim() || undefined,
-      source: 'user',
-    })
-    if (!editId) await db.meta.delete(DRAFT_KEY)
+      ...(workout && { kind: 'workout' as const, workoutId: s!.workoutId, name: s!.name, effort: s!.effort }),
+      source: 'user' as const,
+    }
+    await save(db.sessions, session)
+    if (!editId) await db.meta.delete(draftKey)
     void requestPersistence()
-    toast(editId ? 'Session updated' : `Session saved · ${doneCount} ${doneCount === 1 ? 'exercise' : 'exercises'}`)
+    const bests = editId ? [] : newBests(before, session, exercises)
+    if (bests.length) toast(`New personal best! ${bests.join(' · ')}`)
+    else if (workout) toast(editId ? 'Workout updated' : `Workout saved · ${sessionStats(session).minutes} min`)
+    else toast(editId ? 'Session updated' : `Session saved · ${doneCount} ${doneCount === 1 ? 'exercise' : 'exercises'}`)
     back()
   }
 
@@ -96,7 +116,7 @@ export function SessionPage() {
 
   async function discard() {
     if (!confirm('Discard this session? Sets you ticked off will be lost.')) return
-    await db.meta.delete(DRAFT_KEY)
+    await db.meta.delete(draftKey)
     back()
   }
 
@@ -107,7 +127,7 @@ export function SessionPage() {
   }
 
   return (
-    <SheetForm title={editId ? 'Edit Session' : 'Rehab Session'} canSave={doneCount > 0} onSubmit={finish} onClose={close}>
+    <SheetForm title={workout ? (s.name ?? 'Workout') : editId ? 'Edit Session' : 'Rehab Session'} canSave={doneCount > 0} onSubmit={finish} onClose={close}>
       <p className="-mt-2 px-1 text-[0.875rem] text-muted">
         Started {formatTime(s.startedAt)} · {doneCount} of {s.items.length} exercises done
       </p>
@@ -120,7 +140,7 @@ export function SessionPage() {
       <CompactScale label="Pain Before" value={s.painBefore} onChange={(v) => update((d) => ({ ...d, painBefore: v }))} />
 
       {s.items.length === 0 && (
-        <p className="card p-4 text-muted">Nothing planned yet. Add an exercise below, or build your plan from the Rehab tab.</p>
+        <p className="card p-4 text-muted">{workout ? 'No exercises yet. Add some below.' : 'Nothing planned yet. Add an exercise below, or build your plan from the Rehab tab.'}</p>
       )}
 
       {s.items.map((item, index) => (
@@ -129,6 +149,8 @@ export function SessionPage() {
           item={item}
           exercise={exercises.get(item.exerciseId)}
           injuries={open}
+          workout={workout}
+          onSetDone={() => workout && setRestUntil(Date.now() + (s.restSeconds ?? 90) * 1000)}
           onChange={(fn) => updateItem(index, fn)}
           onRemove={() => update((d) => ({ ...d, items: d.items.filter((_, k) => k !== index) }))}
         />
@@ -142,6 +164,15 @@ export function SessionPage() {
 
       <CompactScale label="Pain After" value={s.painAfter} onChange={(v) => update((d) => ({ ...d, painAfter: v }))} />
 
+      {workout && (
+        <div>
+          <CompactScale label="How Hard Was It?" min={1} value={s.effort} onChange={(v) => update((d) => ({ ...d, effort: v }))} />
+          <p className="section-footer">1 = very easy · 5 = hard but steady · 10 = all-out. Around 5–7 builds fitness without overdoing it.</p>
+        </div>
+      )}
+
+      {restUntil && <RestTimer until={restUntil} onAdd={(sec) => setRestUntil((u) => (u ?? Date.now()) + sec * 1000)} onDone={() => setRestUntil(undefined)} />}
+
       <Field label="Notes">
         <textarea className="input min-h-20" value={s.notes ?? ''} onChange={(e) => update((d) => ({ ...d, notes: e.target.value }))} placeholder="Optional — how it felt, what was hard" />
       </Field>
@@ -151,16 +182,20 @@ export function SessionPage() {
   )
 }
 
-function ItemCard({ item, exercise, injuries, onChange, onRemove }: {
+function ItemCard({ item, exercise, injuries, workout, onSetDone, onChange, onRemove }: {
   item: SessionItem
   exercise?: Exercise
   injuries: Injury[]
+  workout: boolean
+  onSetDone: () => void
   onChange: (fn: (i: SessionItem) => SessionItem) => void
   onRemove: () => void
 }) {
   const timed = exercise?.mode === 'time'
+  // Cardio in minutes (stored as seconds, like every timed exercise)
+  const minutes = exercise?.category === 'cardio'
   const name = exercise?.name ?? 'Removed exercise'
-  const showLoad = item.sets.some((x) => x.load !== undefined)
+  const showLoad = item.sets.some((x) => x.load !== undefined) || (workout && !timed)
   const setAt = (k: number, patch: Partial<SessionItem['sets'][number]>) =>
     onChange((i) => ({ ...i, sets: i.sets.map((x, j) => (j === k ? { ...x, ...patch } : x)) }))
   const done = item.sets.filter((x) => x.done).length
@@ -190,7 +225,11 @@ function ItemCard({ item, exercise, injuries, onChange, onRemove }: {
         {item.sets.map((set, k) => (
           <div key={k} className="cell !py-2">
             <span className="w-12 text-[0.875rem] text-muted">Set {k + 1}</span>
-            <NumField label={`${name} set ${k + 1} ${timed ? 'seconds' : 'reps'}`} value={set.amount} unit={timed ? 's' : 'reps'} onChange={(v) => setAt(k, { amount: v ?? 0 })} />
+            {minutes ? (
+              <NumField label={`${name} set ${k + 1} minutes`} value={Math.round(set.amount / 6) / 10} unit="min" onChange={(v) => setAt(k, { amount: Math.round((v ?? 0) * 60) })} />
+            ) : (
+              <NumField label={`${name} set ${k + 1} ${timed ? 'seconds' : 'reps'}`} value={set.amount} unit={timed ? 's' : 'reps'} onChange={(v) => setAt(k, { amount: v ?? 0 })} />
+            )}
             {showLoad && <NumField label={`${name} set ${k + 1} load`} value={set.load} unit="kg" onChange={(v) => setAt(k, { load: v })} />}
             <span className="flex-1" />
             <button
@@ -198,7 +237,10 @@ function ItemCard({ item, exercise, injuries, onChange, onRemove }: {
               aria-label={`${name} set ${k + 1} done`}
               aria-pressed={set.done}
               onClick={() => {
-                if (!set.done) haptic()
+                if (!set.done) {
+                  haptic()
+                  onSetDone()
+                }
                 setAt(k, { done: !set.done })
               }}
               className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-200 ${set.done ? 'bg-tile-green text-white' : 'border-2 border-line text-transparent'}`}

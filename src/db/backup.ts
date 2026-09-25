@@ -86,6 +86,7 @@ const schemas = {
     equipment: z.string().optional(),
     instructions: z.string().optional(),
     builtin: z.boolean().optional(),
+    category: z.enum(['strength', 'cardio', 'mobility']).optional(),
   }),
   prescriptions: z.object({
     ...base,
@@ -108,6 +109,10 @@ const schemas = {
     painBefore: z.number().min(0).max(10).optional(),
     painAfter: z.number().min(0).max(10).optional(),
     morningPain: z.number().min(0).max(10).optional(),
+    kind: z.literal('workout').optional(),
+    workoutId: z.string().optional(),
+    name: z.string().max(120).optional(),
+    effort: z.number().min(1).max(10).optional(),
     items: z.array(
       z.object({
         exerciseId: z.string(),
@@ -156,6 +161,12 @@ const schemas = {
   }),
   savedMeals: z.object({ ...base, name: z.string(), ...nutrients, items: z.array(foodItem), servings: z.number().min(1).max(100).optional() }),
   foods: z.object({ ...base, name: z.string(), serving: z.string(), grams: z.number().min(0).optional(), ...nutrients }),
+  workouts: z.object({
+    ...base,
+    name: z.string().max(120),
+    items: z.array(z.object({ exerciseId: z.string(), sets: z.number().int().min(1).max(20), target: z.number().min(0), load: z.number().min(0).optional() })).max(40),
+    restSeconds: z.number().int().min(0).max(900),
+  }),
   checkins: z.object({
     ...base,
     recordedAt: z.number(),
