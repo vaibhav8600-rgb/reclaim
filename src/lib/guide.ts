@@ -53,6 +53,22 @@ export const GUIDELINES = {
     short: 'Protein and exercise position stand (ISSN, 2017)',
     citation: 'Jäger R, Kerksick CM, Campbell BI, et al. International Society of Sports Nutrition Position Stand: protein and exercise. J Int Soc Sports Nutr. 2017;14:20.',
   },
+  discImaging: {
+    short: 'Spine scans in people without pain (AJNR, 2015)',
+    citation: 'Brinjikji W, Luetmer PH, Comstock B, et al. Systematic literature review of imaging features of spinal degeneration in asymptomatic populations. AJNR Am J Neuroradiol. 2015;36(4):811–816.',
+  },
+  neckImaging: {
+    short: 'Neck MRI in 1,211 people without symptoms (Spine, 2015)',
+    citation: 'Nakashima H, Yukawa Y, Suda K, et al. Abnormal findings on magnetic resonance images of the cervical spines in 1211 asymptomatic subjects. Spine. 2015;40(6):392–398.',
+  },
+  discRegression: {
+    short: 'Herniated discs shrinking on their own (Clin Rehabil, 2015)',
+    citation: 'Chiu CC, Chuang TY, Chang KH, et al. The probability of spontaneous regression of lumbar herniated disc: a systematic review. Clin Rehabil. 2015;29(2):184–195.',
+  },
+  tendonInjections: {
+    short: 'Injections for tendon pain (Lancet, 2010)',
+    citation: 'Coombes BK, Bisset L, Vicenzino B. Efficacy and safety of corticosteroid injections and other injections for management of tendinopathy: a systematic review of randomised controlled trials. Lancet. 2010;376(9754):1751–1767.',
+  },
   kneeLoad: {
     short: 'Weight loss and knee load (Arthritis Rheum, 2005)',
     citation: 'Messier SP, Gutekunst DJ, Davis C, DeVita P. Weight loss reduces knee-joint loads in overweight and obese older adults with knee osteoarthritis. Arthritis Rheum. 2005;52(7):2026–2032.',
