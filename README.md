@@ -1,6 +1,6 @@
 # Reclaim
 
-**Get back to your life.** A private, offline-first health and recovery app (PWA) for iPhone, following Apple’s Human Interface Guidelines (iOS 26 Liquid Glass). Your data lives on the phone; AI helps on top of it and never replaces it. How to use every feature, with screenshots: [docs/USER_MANUAL.md](docs/USER_MANUAL.md) ([web version](https://claude.ai/artifact/8DoN4P7PhgnPDP6bHXYWjk)). The plan and roadmap: [docs/PLAN.md](docs/PLAN.md).
+**Get back to your life.** A private, offline-first health and recovery app (PWA) for iPhone, following Apple’s Human Interface Guidelines (iOS 26 Liquid Glass). Your data lives on the phone; AI helps on top of it and never replaces it. How to use every feature, with screenshots: [docs/USER_MANUAL.md](docs/USER_MANUAL.md) (also in the app: Settings → User Manual). The plan and roadmap: [docs/PLAN.md](docs/PLAN.md).
 
 ## What it does
 

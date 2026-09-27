@@ -41,6 +41,7 @@ const ReportPage = page(() => import('./features/report/ReportPage'), 'ReportPag
 const NutritionPage = page(() => import('./features/nutrition/NutritionPage'), 'NutritionPage')
 const MealLogPage = page(() => import('./features/nutrition/MealLogPage'), 'MealLogPage')
 const HealthSetupPage = page(() => import('./features/settings/HealthSetupPage'), 'HealthSetupPage')
+const HelpPage = page(() => import('./features/help/HelpPage'), 'HelpPage')
 const RemindersPage = page(() => import('./features/settings/RemindersPage'), 'RemindersPage')
 const FoodPage = page(() => import('./features/nutrition/FoodPage'), 'FoodPage')
 const GoalsPage = page(() => import('./features/goals/GoalsPage'), 'GoalsPage')
@@ -95,6 +96,7 @@ export function App() {
             <Route path="goals" element={<GoalsPage />} />
             <Route path="nutrition/foods/:id" element={<FoodPage />} />
             <Route path="settings/health" element={<HealthSetupPage />} />
+            <Route path="help" element={<HelpPage />} />
             <Route path="settings/reminders" element={<RemindersPage />} />
             <Route path="weight" element={<WeightPage />} />
             <Route path="health/lab" element={<LabPage />} />

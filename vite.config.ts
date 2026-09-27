@@ -102,7 +102,13 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       // The API must always hit the network, never the offline app shell. push-sw.js: daily reminders (Web Push).
-      workbox: { navigateFallback: '/index.html', navigateFallbackDenylist: [/^\/api\//], importScripts: ['push-sw.js'] },
+      // The manual's screenshots (public/help, ~7 MB) aren't precached; each is kept once viewed, for offline reading.
+      workbox: {
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
+        importScripts: ['push-sw.js'],
+        runtimeCaching: [{ urlPattern: /\/help\/[\w-]+\.jpg$/, handler: 'CacheFirst', options: { cacheName: 'manual-screens', expiration: { maxEntries: 100 } } }],
+      },
     }),
   ],
 }))

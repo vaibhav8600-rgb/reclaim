@@ -5,10 +5,10 @@ import { FakeDrive } from './fake-google'
 import { importBackup, PNG, seedDemo } from './helpers'
 
 /**
- * Screenshots for the user manual (docs/USER_MANUAL.md), saved straight into docs/manual/.
+ * Screenshots for the user manual (docs/USER_MANUAL.md and the in-app User Manual), saved straight into public/help/.
  * Off by default; regenerate with:  MANUAL=1 npx playwright test manual --project=iphone-chromium
  */
-const OUT = 'docs/manual'
+const OUT = 'public/help'
 
 test('user manual screenshots', async ({ browser }, info) => {
   test.skip(!process.env.MANUAL || info.project.name !== 'iphone-chromium', 'run with MANUAL=1 on iphone-chromium')
