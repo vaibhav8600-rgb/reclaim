@@ -4,6 +4,8 @@ Reclaim is a health app for your iPhone that helps you recover from injuries. Yo
 
 Everything stays **on your iPhone** unless you choose to back it up to Google Drive or use an AI feature. Reclaim doesn't diagnose anything, and it isn't a substitute for your doctor or physiotherapist.
 
+To read this manual on your phone, open the [web version](https://claude.ai/artifact/8DoN4P7PhgnPDP6bHXYWjk).
+
 The screenshots show the app filled with a demo person, Alex. Alex has tennis elbow and a stiff lower back. To regenerate them, see [Updating the screenshots](#updating-the-screenshots).
 
 ---
