@@ -20,7 +20,7 @@ export async function seedDemo(page: Page, now = Date.now()) {
   return backup
 }
 
-export const tab = (page: Page, name: 'Today' | 'Rehab' | 'Timeline' | 'Injuries') =>
+export const tab = (page: Page, name: 'Today' | 'Exercise' | 'Timeline' | 'Health') =>
   page.locator('nav.tabbar').getByRole('link', { name, exact: true })
 
 /** Every table in the app's IndexedDB, rows sorted by id. */

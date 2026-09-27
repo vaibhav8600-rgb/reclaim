@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { seedDemo, tab, weekAdherence, importBackup, injuriesBackup } from './helpers'
 
 async function addEccentricToPlan(page: Page) {
-  await tab(page, 'Rehab').click()
+  await tab(page, 'Exercise').click()
   await expect(page.getByText('Add your physio exercises')).toBeVisible()
   await page.getByRole('link', { name: 'Browse Exercises' }).click()
   await expect(page.getByRole('heading', { name: 'Exercise Library', level: 1 })).toBeVisible()
@@ -31,7 +31,7 @@ test('build a plan, do a session (with a mid-session reload), see adherence and 
   await importBackup(page, injuriesBackup('Tennis elbow'))
   await addEccentricToPlan(page)
 
-  await tab(page, 'Rehab').click()
+  await tab(page, 'Exercise').click()
   await expect(page.getByTestId('week-adherence')).toHaveText('0 of 7 exercises')
   await page.getByRole('link', { name: 'Start Session' }).click()
   await expect(page.getByRole('heading', { name: 'Rehab Session' })).toBeVisible()
@@ -106,7 +106,7 @@ test('pause and remove plan items', async ({ page }) => {
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Plan updated')).toBeVisible()
 
-  await tab(page, 'Rehab').click()
+  await tab(page, 'Exercise').click()
   await expect(page.getByRole('heading', { name: 'Paused' })).toBeVisible()
   await expect(page.getByText('Everything in your plan is paused.')).toBeVisible()
 
@@ -151,7 +151,7 @@ test('demo data: weekly adherence and progressive loading', async ({ page }) => 
   const now = Date.now()
   const demo = await seedDemo(page, now)
   const { done, planned } = weekAdherence(demo, now)
-  await tab(page, 'Rehab').click()
+  await tab(page, 'Exercise').click()
   await expect(page.getByTestId('week-adherence')).toHaveText(`${done} of ${planned} exercises`)
   await expect(page.getByRole('heading', { name: 'Paused' })).toBeVisible()
   await expect(page.getByRole('link', { name: /Wrist flexor stretch/ })).toBeVisible()

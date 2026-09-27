@@ -22,7 +22,7 @@ export function InjuriesPage() {
 
   return (
     <div>
-      <NavBar title="Injuries" trailing={<GlassButton label="Add injury" to="/injuries/new"><Plus size={24} strokeWidth={2.2} /></GlassButton>} />
+      <NavBar title="Health" trailing={<GlassButton label="Add injury" to="/injuries/new"><Plus size={24} strokeWidth={2.2} /></GlassButton>} />
       <Section className="mb-5">
         <Group inset="3.625rem">
           <Row icon={<IconTile icon={HeartPulse} color="pink" />} title="Health Profile" value={toReview ? `${toReview} to review` : undefined} to="/health" />
@@ -30,7 +30,7 @@ export function InjuriesPage() {
           <Row icon={<IconTile icon={ClipboardCheck} color="green" />} title="How You’re Doing" subtitle="Weekly check-ins: sitting, walking, sleep, activities" to="/progress" />
         </Group>
       </Section>
-      <Section className="mb-5">
+      <Section title="Injuries" className="mb-5">
         <Segmented options={[{ value: 'open', label: 'Current' }, { value: 'resolved', label: 'Resolved' }]} value={tab} onChange={setTab} />
       </Section>
       {list.length ? (

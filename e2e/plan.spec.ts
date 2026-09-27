@@ -82,7 +82,7 @@ test('recovery plan: only vetted exercises in range, targets from formulas, and 
   await page.getByLabel('Add Glute bridge').uncheck()
   await page.getByRole('button', { name: 'Use This Plan' }).click()
   await expect(page.getByText('Added 1 exercise to your rehab plan')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Rehab', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Exercise', level: 1 })).toBeVisible()
   const db = await dumpDb(page)
   const added = db.prescriptions.filter((p) => p.exerciseId === 'ex-pro-sup')
   expect(added).toMatchObject([{ sets: 3, target: 12, timesPerDay: 1, daysPerWeek: 6, injuryId: 'demo-injury-elbow', active: true }])

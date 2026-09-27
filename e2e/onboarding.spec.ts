@@ -26,7 +26,7 @@ test('first run: empty state, add an injury, see it across the app', async ({ pa
   await expect(page.getByText('Lateral epicondylitis')).toBeVisible()
   await expect(page.getByText('Typing all day')).toBeVisible()
 
-  await tab(page, 'Injuries').click()
+  await tab(page, 'Health').click()
   await expect(page.getByRole('link', { name: /Tennis elbow.*Active/ })).toBeVisible()
 
   await tab(page, 'Today').click()
@@ -40,7 +40,7 @@ test('cancelling the new-injury sheet saves nothing', async ({ page }) => {
   await page.getByRole('link', { name: 'Add injury', exact: true }).click()
   await page.getByPlaceholder('Left elbow pain').fill('Should not exist')
   await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page.getByRole('heading', { name: 'Injuries', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Health', level: 1 })).toBeVisible()
   await expect(page.getByText('No current injuries')).toBeVisible()
 })
 

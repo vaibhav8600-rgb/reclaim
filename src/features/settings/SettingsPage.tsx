@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Bell, Camera, Eye, Cloud, Download, FileUp, HardDrive, Heart, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Target, Trash2 } from 'lucide-react'
+import { Archive, Bell, Camera, Eye, Cloud, Download, FileUp, HardDrive, Heart, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Target, Trash2 } from 'lucide-react'
 import type { AiHealth } from '../../../shared/ai'
 import { AiConsentSheet } from '../../components/ai'
 import { aiHealth, setAiConsent, type AiConsent } from '../../lib/ai'
@@ -9,6 +9,7 @@ import { db, DATA_TABLES, type DataTable } from '../../db/db'
 import { useMeta, useProfile } from '../../db/hooks'
 import { alive, notifyLocalChange, save, setMeta } from '../../db/repo'
 import { AI_PREVIEW_KEY } from '../../lib/aiPreview'
+import { buildExport } from '../../lib/exportAll'
 import { applyImport, buildBackupFile, deleteEverything, markBackedUp, planImport, type ImportPlan } from '../../db/backup'
 import { Avatar, Group, IconTile, NavBar, Row, Section, Segmented, Toggle } from '../../components/ui'
 import { formatWhen, relativeAge } from '../../lib/dates'
@@ -281,13 +282,30 @@ function BackupSection() {
     return { entries: s + m + j, injuries: i }
   }, [])
   const [file, setFile] = useState<File>()
+  // An export (ZIP) isn't a backup Reclaim can restore directly, so it doesn't count as one.
+  const [isExport, setIsExport] = useState(false)
+  const [building, setBuilding] = useState(false)
   const canShare = file && isTouch() && navigator.canShare?.({ files: [file] })
+
+  async function exportAll() {
+    setBuilding(true)
+    try {
+      const { file, skipped } = await buildExport()
+      setIsExport(true)
+      setFile(file)
+      if (skipped.length) toast(`${skipped.length} ${skipped.length === 1 ? 'record file is' : 'record files are'} only in Google Drive — sign in to include ${skipped.length === 1 ? 'it' : 'them'}`)
+    } catch {
+      toast('Couldn’t build the export. Try again.')
+    } finally {
+      setBuilding(false)
+    }
+  }
 
   async function share() {
     try {
       await navigator.share({ files: [file!], title: file!.name })
-      await markBackedUp()
-      toast('Backup saved')
+      if (!isExport) await markBackedUp()
+      toast(isExport ? 'Export saved' : 'Backup saved')
       setFile(undefined)
     } catch (e) {
       if ((e as Error).name !== 'AbortError') toast("Couldn't open the share sheet — try Download")
@@ -301,15 +319,15 @@ function BackupSection() {
     a.click()
     a.remove()
     setTimeout(() => URL.revokeObjectURL(url), 10_000)
-    await markBackedUp()
-    toast('Backup downloaded')
+    if (!isExport) await markBackedUp()
+    toast(isExport ? 'Export downloaded' : 'Backup downloaded')
     setFile(undefined)
   }
 
   const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
   return (
-    <Section title="Backup" footer="One JSON file with everything. Keep it somewhere private — it contains your health data.">
+    <Section title="Backup" footer="A backup is one file Reclaim can restore. An export also has spreadsheets and your records, to keep or open elsewhere. Keep both somewhere private — they contain your health data.">
       <div id="backup" />
       <Group inset={TILE_INSET}>
         <Row
@@ -319,7 +337,10 @@ function BackupSection() {
           value={lastBackupAt ? relativeAge(lastBackupAt) : 'Never backed up'}
         />
         {!file ? (
-          <Row icon={<IconTile icon={Download} color="green" />} title="Create Backup" tone="accent" onClick={async () => setFile(await buildBackupFile())} />
+          <>
+            <Row icon={<IconTile icon={Download} color="green" />} title="Create Backup" tone="accent" onClick={async () => { setIsExport(false); setFile(await buildBackupFile()) }} />
+            <Row icon={<IconTile icon={Archive} color="indigo" />} title={building ? 'Preparing Export…' : 'Export Everything'} subtitle="Spreadsheets of each area, your records’ files and a backup, in one ZIP" tone="accent" onClick={() => !building && exportAll()} />
+          </>
         ) : (
           <>
             {canShare && <Row icon={<IconTile icon={Share} color="green" />} title="Save to Files or Google Drive" subtitle={`${file.name} · ${formatBytes(file.size)}`} tone="accent" onClick={share} />}

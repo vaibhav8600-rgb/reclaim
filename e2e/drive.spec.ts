@@ -62,7 +62,7 @@ test('a new device unlocks the backups with the passphrase and gets everything',
 
   const after = await dumpDb(laptop)
   expect(canonical(after)).toBe(canonical(before))
-  await tab(laptop, 'Injuries').click()
+  await tab(laptop, 'Health').click()
   await expect(laptop.getByRole('link', { name: /Tennis elbow/ })).toBeVisible()
 })
 

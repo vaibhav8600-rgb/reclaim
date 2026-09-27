@@ -140,7 +140,7 @@ export function SessionPage() {
       <CompactScale label="Pain Before" value={s.painBefore} onChange={(v) => update((d) => ({ ...d, painBefore: v }))} />
 
       {s.items.length === 0 && (
-        <p className="card p-4 text-muted">{workout ? 'No exercises yet. Add some below.' : 'Nothing planned yet. Add an exercise below, or build your plan from the Rehab tab.'}</p>
+        <p className="card p-4 text-muted">{workout ? 'No exercises yet. Add some below.' : 'Nothing planned yet. Add an exercise below, or build your plan from the Exercise tab.'}</p>
       )}
 
       {s.items.map((item, index) => (

@@ -26,7 +26,7 @@ export function RehabPage() {
 
   return (
     <div className="space-y-7 pb-4">
-      <NavBar title="Rehab" trailing={<GlassButton label="Add exercise" to="/rehab/library"><Plus size={24} strokeWidth={2.2} /></GlassButton>} />
+      <NavBar title="Exercise" trailing={<GlassButton label="Add exercise" to="/rehab/library"><Plus size={24} strokeWidth={2.2} /></GlassButton>} />
 
       {prescriptions.length === 0 ? (
         <EmptyState

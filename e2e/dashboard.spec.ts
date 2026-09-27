@@ -48,7 +48,7 @@ test('Injury detail: 14/30/90-day averages and counts', async ({ page }) => {
 
 test('Injuries: current vs resolved', async ({ page }) => {
   await seedDemo(page)
-  await tab(page, 'Injuries').click()
+  await tab(page, 'Health').click()
   await expect(page.getByRole('link', { name: /Tennis elbow.*Improving/ })).toBeVisible()
   await expect(page.getByRole('link', { name: /Lower back stiffness.*Monitoring/ })).toBeVisible()
   await expect(page.getByRole('link', { name: /Left ankle sprain/ })).toHaveCount(0)

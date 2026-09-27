@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router'
 import { MLink } from '../../components/MLink'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Activity, ArrowDownRight, ArrowUpRight, Bandage, ChevronRight, ClipboardList, CloudDownload, ClipboardCheck, CloudUpload, HeartPulse, Plus, Ruler, ShieldCheck, Smartphone, Sparkles, UserRound } from 'lucide-react'
+import { Activity, ArrowDownRight, ArrowUpRight, Bandage, CalendarRange, ChevronRight, ClipboardList, CloudDownload, ClipboardCheck, CloudUpload, HeartPulse, Plus, Ruler, ShieldCheck, Smartphone, Sparkles, UserRound } from 'lucide-react'
 import { db } from '../../db/db'
 import { isOpenInjury, useEntries, useInjuries, useInjuryMap, useMeta, usePrescriptions, useProfile, useSymptomsSince } from '../../db/hooks'
 import { alive, setMeta } from '../../db/repo'
@@ -86,6 +86,8 @@ export function TodayPage() {
       ) : (
         <PainCard injuryIds={open.map((i) => i.id)} names={new Map(open.map((i) => [i.id, i.name]))} />
       )}
+
+      <WeekToday />
 
       {injuries.length > 0 && <InsightsToday />}
 
@@ -316,6 +318,24 @@ function RehabToday({ hasInjuries }: { hasInjuries: boolean }) {
           </MLink>
         )}
       </div>
+    </Section>
+  )
+}
+
+/** Sundays and Mondays: the week in review. */
+function WeekToday() {
+  const day = new Date().getDay()
+  if (day !== 0 && day !== 1) return null
+  return (
+    <Section>
+      <MLink to="/week" className="card cell cell-press !py-4" data-testid="week-card">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"><CalendarRange size={19} /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium">Your week in review</span>
+          <span className="block text-[0.875rem] text-muted">Pain, rehab, steps, sleep, weight and food, against the week before</span>
+        </span>
+        <ChevronRight size={18} className="text-faint" />
+      </MLink>
     </Section>
   )
 }

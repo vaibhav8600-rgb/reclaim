@@ -16,6 +16,8 @@ self.reclaimReminder = function (data, now) {
   const sessions = (data.sessions || []).filter(alive)
   const open = (data.injuries || []).filter((i) => alive(i) && i.status !== 'resolved')
   const items = []
+  // Sundays: the week in review comes first
+  if (new Date(now).getDay() === 0) items.push({ text: 'Your week in review is ready.', url: '/week' })
   if (sessions.some((s) => s.recordedAt >= yesterday && s.recordedAt < today && s.morningPain === undefined)) {
     items.push({ text: 'How did it feel after yesterday’s rehab? One tap on Today.', url: '/' })
   }

@@ -1,14 +1,14 @@
 import { useState, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
-import { Bandage, CalendarDays, Dumbbell, HeartPulse, Plus } from 'lucide-react'
+import { CalendarDays, Dumbbell, HeartPulse, Plus, Stethoscope } from 'lucide-react'
 import { useGo } from '../lib/nav'
 import { QuickLogSheet } from './QuickLogSheet'
 
 const tabs = [
   { to: '/', label: 'Today', icon: HeartPulse },
-  { to: '/rehab', label: 'Rehab', icon: Dumbbell },
+  { to: '/rehab', label: 'Exercise', icon: Dumbbell },
   { to: '/timeline', label: 'Timeline', icon: CalendarDays },
-  { to: '/injuries', label: 'Injuries', icon: Bandage },
+  { to: '/injuries', label: 'Health', icon: Stethoscope },
 ]
 
 /** Bottom offset shared by the tab bar and toasts: sits just above the home indicator. */

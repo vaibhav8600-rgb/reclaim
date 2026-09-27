@@ -36,6 +36,7 @@ const DocumentsPage = page(() => import('./features/documents/DocumentsPage'), '
 const DocumentDetailPage = page(() => import('./features/documents/DocumentDetailPage'), 'DocumentDetailPage')
 const DocumentFormPage = page(() => import('./features/documents/DocumentFormPage'), 'DocumentFormPage')
 const InsightsPage = page(() => import('./features/insights/InsightsPage'), 'InsightsPage')
+const WeekPage = page(() => import('./features/insights/WeekPage'), 'WeekPage')
 const ReportPage = page(() => import('./features/report/ReportPage'), 'ReportPage')
 const NutritionPage = page(() => import('./features/nutrition/NutritionPage'), 'NutritionPage')
 const MealLogPage = page(() => import('./features/nutrition/MealLogPage'), 'MealLogPage')
@@ -84,6 +85,7 @@ export function App() {
             <Route path="documents" element={<DocumentsPage />} />
             <Route path="documents/:id" element={<DocumentDetailPage />} />
             <Route path="insights" element={<InsightsPage />} />
+            <Route path="week" element={<WeekPage />} />
             <Route path="report" element={<ReportPage />} />
             <Route path="nutrition" element={<NutritionPage />} />
             <Route path="health" element={<HealthPage />} />
