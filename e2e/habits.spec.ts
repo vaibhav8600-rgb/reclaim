@@ -55,7 +55,7 @@ test('weekly check-in: asked on Today, compared with last week, and in the repor
   await expect(page.getByText('Check-in saved')).toBeVisible()
   await expect(page.getByRole('link', { name: /Weekly check-in/ })).toHaveCount(0)
 
-  const saved = (await dumpDb(page)).checkins.find((c: CheckIn) => c.id !== 'c0')
+  const saved = ((await dumpDb(page)).checkins as unknown as CheckIn[]).find((c) => c.id !== 'c0')
   expect(saved).toMatchObject({ pain: 6, enjoyment: 5, generalActivity: 4, sitMinutes: 45, nightsWoken: 3, activities: [{ name: 'Sitting at work', score: 3 }] })
 
   await page.goto('/progress')

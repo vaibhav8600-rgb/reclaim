@@ -81,7 +81,7 @@ test('flare-up: offered when pain is high, halves the sets, and ends with a note
   await page.getByRole('button', { name: 'It’s Settling — End Flare-Up' }).click()
   await expect(page.getByText('Flare-up ended — back to your usual plan')).toBeVisible()
   await expect(page.getByTestId('flare-card')).toHaveCount(0)
-  const notes = (await dumpDb(page)).journal.map((j: { text: string }) => j.text)
+  const notes = (await dumpDb(page)).journal.map((j) => j.text as string)
   expect(notes).toEqual(expect.arrayContaining(['Flare-up started: gentler days, half the usual sets.', 'Flare-up ended after 1 day.']))
 })
 
@@ -97,7 +97,7 @@ test('how far it reaches: asked for back and neck symptoms, shown on the timelin
   await page.getByRole('button', { name: 'Below the knee' }).click()
   await page.getByRole('radio', { name: '4', exact: true }).click()
   await page.getByRole('button', { name: 'Save' }).click()
-  expect((await dumpDb(page)).symptoms.find((s: Symptom) => s.type === 'tingling')).toMatchObject({ reach: 3 })
+  expect((await dumpDb(page)).symptoms.find((s) => s.type === 'tingling')).toMatchObject({ reach: 3 })
 
   await page.goto('/injuries/back')
   await expect(page.getByTestId('reach-trend')).toHaveText('Spreading further down')
