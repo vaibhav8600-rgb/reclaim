@@ -75,7 +75,7 @@ test('workout: add a starter, log it with the rest timer and effort, and beat a 
   await page.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('New personal best! Lat pulldown: 35 kg')).toBeVisible()
 
-  const saved = (await dumpDb(page)).sessions.find((s: RehabSession) => s.id !== 'w0')
+  const saved = ((await dumpDb(page)).sessions as unknown as RehabSession[]).find((s) => s.id !== 'w0')
   expect(saved).toMatchObject({ kind: 'workout', name: 'Gym: upper body', effort: 7, items: expect.arrayContaining([expect.objectContaining({ exerciseId: 'fx-lat-pulldown', sets: expect.arrayContaining([{ amount: 10, load: 35, done: true }]) })]) })
   await expect(page.getByRole('link', { name: /Gym: upper body.*350 kg lifted · effort 7\/10/ })).toBeVisible() // in Recent Sessions
 })
