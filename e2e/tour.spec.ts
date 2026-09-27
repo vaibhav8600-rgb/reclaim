@@ -42,6 +42,7 @@ const screens: [name: string, path: string, heading: string, fullPage?: false][]
 for (const scheme of ['light', 'dark'] as const) {
   test(`screenshot tour (${scheme})`, async ({ page }, info) => {
     test.skip(info.project.name !== 'iphone-webkit', 'one engine is enough for screenshots')
+    test.setTimeout(480_000) // dozens of full-page shots; Windows WebKit runs these four in parallel slowly
     await seedDemo(page)
     await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' })
     for (const [name, route, heading, fullPage = true] of screens) {
@@ -78,6 +79,7 @@ for (const scheme of ['light', 'dark'] as const) {
 for (const scheme of ['light', 'dark'] as const) {
   test(`AI screens tour (${scheme})`, async ({ browser }, info) => {
     test.skip(info.project.name !== 'iphone-webkit', 'one engine is enough for screenshots')
+    test.setTimeout(480_000) // dozens of full-page shots; Windows WebKit runs these four in parallel slowly
     const { FakeDrive } = await import('./fake-google')
     const { mockAi } = await import('./fake-ai')
     const { newDevice, PNG } = await import('./helpers')

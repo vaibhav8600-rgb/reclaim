@@ -4,7 +4,7 @@ Reclaim is a health app for your iPhone that helps you recover from injuries. Yo
 
 Everything stays **on your iPhone** unless you choose to back it up to Google Drive or use an AI feature. Reclaim doesn't diagnose anything, and it isn't a substitute for your doctor or physiotherapist.
 
-To read this manual on your phone, open the [web version](https://claude.ai/artifact/8DoN4P7PhgnPDP6bHXYWjk).
+You can also read this manual in the app: **Settings → User Manual**.
 
 The screenshots show the app filled with a demo person, Alex. Alex has tennis elbow and a stiff lower back. To regenerate them, see [Updating the screenshots](#updating-the-screenshots).
 
@@ -50,7 +50,7 @@ Until you do this, Today shows an **Add Reclaim to your Home Screen** card.
 
 ### The welcome screen
 
-<img src="manual/welcome.jpg" width="300" alt="Welcome screen">
+<img src="../public/help/welcome.jpg" width="300" alt="Welcome screen">
 
 The first time you open Reclaim, it asks a few quick questions. All of them are optional.
 
@@ -84,7 +84,7 @@ After you delete something, an **Undo** message appears for a few seconds.
 
 ## 3. Today
 
-<img src="manual/today.jpg" width="300" alt="Today screen">
+<img src="../public/help/today.jpg" width="300" alt="Today screen">
 
 Today changes through the day. From top to bottom:
 
@@ -117,7 +117,7 @@ Today changes through the day. From top to bottom:
 
 ### Quick log (the green + button)
 
-<img src="manual/quick-log.jpg" width="300" alt="Quick log sheet">
+<img src="../public/help/quick-log.jpg" width="300" alt="Quick log sheet">
 
 The fastest way to log pain:
 
@@ -131,7 +131,7 @@ Underneath are shortcuts to every other form: **Rehab Session**, **Symptom Detai
 
 ### Symptom details
 
-<img src="manual/log-symptom.jpg" width="300" alt="Log Symptom form">
+<img src="../public/help/log-symptom.jpg" width="300" alt="Log Symptom form">
 
 Use this when you want to record more than a number.
 
@@ -147,25 +147,25 @@ Use this when you want to record more than a number.
 
 ### Measurement
 
-<img src="manual/log-measurement.jpg" width="300" alt="Measurement form">
+<img src="../public/help/log-measurement.jpg" width="300" alt="Measurement form">
 
 Grip strength, range of motion, swelling and other numbers your physio tracks. Each has a side (left or right) and a method, so repeat readings compare like with like. Measurements show on Today, on the injury page and in the clinician report.
 
 ### Note
 
-<img src="manual/log-note.jpg" width="300" alt="Note form">
+<img src="../public/help/log-note.jpg" width="300" alt="Note form">
 
 Write anything in your own words. With AI turned on, **Turn into Entries** reads the note and suggests the entries in it: pain scores, measurements, steps and so on. You check each one before it's saved. See [AI features](#15-ai-features).
 
 ### Sleep
 
-<img src="manual/log-sleep.jpg" width="300" alt="Sleep form">
+<img src="../public/help/log-sleep.jpg" width="300" alt="Sleep form">
 
 Bedtime, wake time and how well you slept. There's one record per night; logging the same night again updates it.
 
 ### Steps and activity
 
-<img src="manual/log-steps.jpg" width="300" alt="Steps and Activity form">
+<img src="../public/help/log-steps.jpg" width="300" alt="Steps and Activity form">
 
 Type your steps, or bring them in from Apple Health:
 
@@ -179,7 +179,7 @@ If your steps jump far above your recent average, the form suggests building up 
 
 ### Meals and food
 
-<img src="manual/log-meal.jpg" width="300" alt="Meal form">
+<img src="../public/help/log-meal.jpg" width="300" alt="Meal form">
 
 There are several ways to log a meal. Use whichever is quickest:
 
@@ -193,7 +193,7 @@ Choose **Breakfast, Lunch, Dinner or Snack**, and turn on **Add to Saved Meals**
 
 | Search | Portion |
 |---|---|
-| <img src="manual/food-search.jpg" width="260" alt="Food search"> | <img src="manual/food-portion.jpg" width="260" alt="Choose a portion"> |
+| <img src="../public/help/food-search.jpg" width="260" alt="Food search"> | <img src="../public/help/food-portion.jpg" width="260" alt="Choose a portion"> |
 
 After you tap a food, choose the **serving** (for example *1 katori (150 g)* or *100 g*) and **how many**. You can use −/+ or tap 0.5, 1, 1.5, 2 or 3. The card shows calories, protein, carbs, fat and fiber. Tap **Add to Meal**.
 
@@ -206,7 +206,7 @@ After you tap a food, choose the **serving** (for example *1 katori (150 g)* or 
 
 ## 5. Exercise: rehab plan and sessions
 
-<img src="manual/exercise.jpg" width="300" alt="Exercise tab">
+<img src="../public/help/exercise.jpg" width="300" alt="Exercise tab">
 
 The **Exercise** tab has:
 
@@ -221,13 +221,13 @@ The **Exercise** tab has:
 
 ### The exercise library
 
-<img src="manual/library.jpg" width="300" alt="Exercise library">
+<img src="../public/help/library.jpg" width="300" alt="Exercise library">
 
 The library holds every exercise. You can search by name or body region, and filter with the chips: **All, Rehab, Strength, Cardio, Mobility**.
 
 Fitness exercises are checked against your injuries:
 
-<img src="manual/library-strength.jpg" width="300" alt="Library with caution badges">
+<img src="../public/help/library-strength.jpg" width="300" alt="Library with caution badges">
 
 - **Ask physio** (red): the exercise loads one of your injuries heavily, for example a barbell overhead press with a disc problem. Ask your physio before doing it.
 - **Adjust** (orange): the exercise is fine with a change. The exercise page says what the change is.
@@ -236,24 +236,24 @@ The **+** at the top right creates your own exercise.
 
 ### An exercise
 
-<img src="manual/exercise-rehab.jpg" width="300" alt="Exercise detail">
+<img src="../public/help/exercise-rehab.jpg" width="300" alt="Exercise detail">
 
 Each exercise page has:
 
 - **How To**: an animated demonstration (or still frames with Reduce Motion on) and plain instructions.
 - **Adjust for your injuries** (fitness exercises): what to change for each of your injuries.
 
-<img src="manual/exercise-fitness.jpg" width="300" alt="Fitness exercise with adjust notes">
+<img src="../public/help/exercise-fitness.jpg" width="300" alt="Fitness exercise with adjust notes">
 
 - **Add to Plan**: sets, target, weight, times a day, days a week, and which injury it's for.
 
-<img src="manual/prescription-form.jpg" width="300" alt="Add to Plan form">
+<img src="../public/help/prescription-form.jpg" width="300" alt="Add to Plan form">
 
 - **Progress**: a chart of your total reps (or seconds, or weight) over time. It fills in after your first session.
 
 ### A rehab session
 
-<img src="manual/rehab-session.jpg" width="300" alt="Rehab session">
+<img src="../public/help/rehab-session.jpg" width="300" alt="Rehab session">
 
 1. Tap **Start Session** (on Today or Exercise).
 2. Rate **Pain before** (0–10).
@@ -289,7 +289,7 @@ Under **Workouts**, tap one to add it:
 
 Then make it your own: tap the pencil to edit, or **Start** to do it. **New** builds one from scratch.
 
-<img src="manual/workout-editor.jpg" width="300" alt="Workout editor">
+<img src="../public/help/workout-editor.jpg" width="300" alt="Workout editor">
 
 In the editor you can:
 
@@ -303,7 +303,7 @@ If an exercise in a workout is one to ask your physio about, the workout list sa
 
 | The workout | The rest timer |
 |---|---|
-| <img src="manual/workout-session.jpg" width="260" alt="Workout session"> | <img src="manual/rest-timer.jpg" width="260" alt="Rest timer"> |
+| <img src="../public/help/workout-session.jpg" width="260" alt="Workout session"> | <img src="../public/help/rest-timer.jpg" width="260" alt="Rest timer"> |
 
 - Each exercise shows its sets with **reps** and **kg** (or seconds, or minutes for cardio).
 - Exercises that need a change for your injuries show the **Adjust for your injuries** note right there.
@@ -326,7 +326,7 @@ The morning after a rehab session, Today asks: *“How much does it hurt this mo
 
 ### Flare-up plan
 
-<img src="manual/flare-card.jpg" width="300" alt="Flare-up card">
+<img src="../public/help/flare-card.jpg" width="300" alt="Flare-up card">
 
 When pain is **7/10 or more**, Today offers **Start Flare-Up Plan**. You can also start one any time from **Exercise → Having a Flare-Up?** While it's on:
 
@@ -341,13 +341,13 @@ Tap **It’s Settling — End Flare-Up** when it eases. The start and end are no
 
 ## 8. Health: injuries
 
-<img src="manual/health-tab.jpg" width="300" alt="Health tab">
+<img src="../public/help/health-tab.jpg" width="300" alt="Health tab">
 
 The **Health** tab opens with **Health Profile**, **Medical Records** and **How You’re Doing**. Below them are your **Injuries**, split into **Current** and **Resolved**. Each injury shows its status (*Improving, Monitoring, Active…*), how long it's been, and the latest pain score.
 
 **+** (top right) adds an injury:
 
-<img src="manual/injury-form.jpg" width="300" alt="New injury form">
+<img src="../public/help/injury-form.jpg" width="300" alt="New injury form">
 
 For each injury you can record:
 
@@ -357,7 +357,7 @@ For each injury you can record:
 
 ### An injury
 
-<img src="manual/injury-detail.jpg" width="300" alt="Injury detail">
+<img src="../public/help/injury-detail.jpg" width="300" alt="Injury detail">
 
 Each injury page has:
 
@@ -372,13 +372,13 @@ Each injury page has:
 - **Details**: diagnosis, how it happened, and notes.
 - **Recent**: the latest entries. **Show All** opens them in the timeline.
 
-<img src="manual/injury-back.jpg" width="300" alt="Lower back injury">
+<img src="../public/help/injury-back.jpg" width="300" alt="Lower back injury">
 
 ---
 
 ## 9. Warning signs
 
-<img src="manual/safety.jpg" width="300" alt="Warning signs check">
+<img src="../public/help/safety.jpg" width="300" alt="Warning signs check">
 
 This is a short list of signs that mean you need a doctor soon. It's picked for your injuries (lower back, neck, joints), comes from the JOSPT back and neck guidelines, and takes about 30 seconds.
 
@@ -397,7 +397,7 @@ Today reminds you once a week. The [flare-up card](#flare-up-plan) links here to
 
 | Check-in | How You’re Doing |
 |---|---|
-| <img src="manual/checkin.jpg" width="260" alt="Weekly check-in"> | <img src="manual/progress.jpg" width="260" alt="How You’re Doing"> |
+| <img src="../public/help/checkin.jpg" width="260" alt="Weekly check-in"> | <img src="../public/help/progress.jpg" width="260" alt="How You’re Doing"> |
 
 Pain scores miss a lot, so once a week Reclaim asks a minute's worth of questions about how pain affects your life. Skip anything you like.
 
@@ -420,7 +420,7 @@ A change of **2 points or more** is the kind your clinician counts as real.
 
 ### Health Profile
 
-<img src="manual/health-profile.jpg" width="300" alt="Health Profile">
+<img src="../public/help/health-profile.jpg" width="300" alt="Health Profile">
 
 This is everything your records say about you, in one place. Each fact is **checked by you** before it joins the profile:
 
@@ -429,24 +429,24 @@ This is everything your records say about you, in one place. Each fact is **chec
 - **Medicines**: prescriptions from the last 3 months. Older ones are under *Earlier Medicines*. Ask your doctor before starting or stopping anything.
 - **Lab Results**: tap one to see every result for that test over time, against its reference range.
 
-<img src="manual/lab.jpg" width="300" alt="Lab result history">
+<img src="../public/help/lab.jpg" width="300" alt="Lab result history">
 
 - **Scans**: scan findings.
 - **Add a Fact by Hand**: type in a lab result, medicine, condition or finding yourself.
 
-<img src="manual/fact-form.jpg" width="300" alt="Add a fact">
+<img src="../public/help/fact-form.jpg" width="300" alt="Add a fact">
 
 - **Record Summaries**: every AI summary of a record.
 
 ### Medical Records
 
-<img src="manual/records.jpg" width="300" alt="Medical records">
+<img src="../public/help/records.jpg" width="300" alt="Medical records">
 
 This is where your reports, prescriptions, scans and letters live, as PDFs or photos. Filter them by type with the chips.
 
 **Add Records** (several at once):
 
-<img src="manual/add-records.jpg" width="300" alt="Add records">
+<img src="../public/help/add-records.jpg" width="300" alt="Add records">
 
 1. Tap **Choose Files or Take Photos**. PDFs and photos up to 25 MB each are accepted.
 2. Choose which injury they're **For** (or *Not injury-specific*).
@@ -455,11 +455,11 @@ This is where your reports, prescriptions, scans and letters live, as PDFs or ph
 
 **Add Document** (one at a time, with the details typed in):
 
-<img src="manual/add-document.jpg" width="300" alt="Add document">
+<img src="../public/help/add-document.jpg" width="300" alt="Add document">
 
 ### A record
 
-<img src="manual/ai-document.jpg" width="300" alt="Record with AI summary">
+<img src="../public/help/ai-document.jpg" width="300" alt="Record with AI summary">
 
 A record's page shows:
 
@@ -467,7 +467,7 @@ A record's page shows:
 - **Summarize with AI**: a plain-English summary, the findings, and questions for your clinician. It's marked *“check against the original”*.
 - **Review N Facts**: the lab results, medicines and findings AI found. Tick the ones that are right and correct any mistakes. Only the facts you confirm reach your Health Profile.
 
-<img src="manual/ai-facts-review.jpg" width="300" alt="Review facts">
+<img src="../public/help/ai-facts-review.jpg" width="300" alt="Review facts">
 
 - **Since Last Time**: for a repeat test, what changed since the previous one of the same kind. It shows what's new, what's gone and which numbers moved.
 - **Details**: which injury it's for, the file, and whether it's backed up to Google Drive or kept on *This iPhone only*.
@@ -478,7 +478,7 @@ A record's page shows:
 
 ### Nutrition
 
-<img src="manual/nutrition.jpg" width="300" alt="Nutrition">
+<img src="../public/help/nutrition.jpg" width="300" alt="Nutrition">
 
 - **Today**:
   - Calories against your goal, and what's left.
@@ -490,13 +490,13 @@ A record's page shows:
 - **Saved Meals & Recipes**: tap one to log it. A recipe that makes several servings logs one serving. Tap ⓘ to edit.
 - **My Foods**: add packaged foods from their nutrition label, so they're one search away.
 
-<img src="manual/my-food.jpg" width="300" alt="New food">
+<img src="../public/help/my-food.jpg" width="300" alt="New food">
 
 - **Meals Today**: tap one to edit it.
 
 ### Goals
 
-<img src="manual/goals.jpg" width="300" alt="Goals">
+<img src="../public/help/goals.jpg" width="300" alt="Goals">
 
 - **Every day**: calories, protein, fiber, water, steps and sleep. The notes under them give the guideline ranges.
 - **Work out my calories**:
@@ -508,7 +508,7 @@ A record's page shows:
 
 ### Weight
 
-<img src="manual/weight.jpg" width="300" alt="Weight">
+<img src="../public/help/weight.jpg" width="300" alt="Weight">
 
 - Your latest weight, the change over a month, and the distance to your goal.
 - **Easier on your knees**: each kilogram you lose takes about **4 kg off each knee with every step** (Messier, 2005). Reclaim shows how much you've already taken off, and how much reaching your goal would.
@@ -522,7 +522,7 @@ A record's page shows:
 
 ### Insights
 
-<img src="manual/insights.jpg" width="300" alt="Insights">
+<img src="../public/help/insights.jpg" width="300" alt="Insights">
 
 Open it from Today → Insights.
 
@@ -530,13 +530,13 @@ Open it from Today → Insights.
 - **This Week → Create Weekly Summary** (AI): a calm summary of your last 7 days against the week before. It covers what the data shows, possible patterns, what the data *can't* establish, and what to discuss with your clinician.
 - **Ask About Your Recovery** (AI): type a question, or tap one (*Is my rehab helping? What changed since last month? When is my pain worst during the day?*), then tap **Ask**. Answers come from your own log.
 
-<img src="manual/ai-insights.jpg" width="300" alt="AI answer in Insights">
+<img src="../public/help/ai-insights.jpg" width="300" alt="AI answer in Insights">
 
 - **For Your Appointment → Clinician Report**.
 
 ### Your Week
 
-<img src="manual/week.jpg" width="300" alt="Your Week">
+<img src="../public/help/week.jpg" width="300" alt="Your Week">
 
 Every area of this week (or **Last Week**) against the week before, each marked **Better / Same / Worse**:
 
@@ -549,7 +549,7 @@ Calories count as better when you're **closer to your goal**, not just lower. No
 
 ### Clinician Report
 
-<img src="manual/report.jpg" width="300" alt="Clinician report">
+<img src="../public/help/report.jpg" width="300" alt="Clinician report">
 
 A printable summary for your doctor or physio.
 
@@ -565,13 +565,13 @@ A printable summary for your doctor or physio.
 4. **Print or PDF**: on iPhone, tap Print, pinch outwards on the preview, then Share to save it as a PDF.
 5. **Attachments** lists the records for that injury. **Share the Record(s)** sends the files themselves (MRI reports, blood tests…) alongside the report.
 
-<img src="manual/ai-report.jpg" width="300" alt="Report with AI summary">
+<img src="../public/help/ai-report.jpg" width="300" alt="Report with AI summary">
 
 ---
 
 ## 14. Timeline
 
-<img src="manual/timeline.jpg" width="300" alt="Timeline">
+<img src="../public/help/timeline.jpg" width="300" alt="Timeline">
 
 Everything you've logged, newest first, grouped by day. Filter with the chips: **All, Symptoms, Measurements, Rehab, Meals, Sleep, Activity, Notes, Records, Injuries**. Tap any entry to edit or delete it.
 
@@ -581,7 +581,7 @@ Everything you've logged, newest first, grouped by day. Filter with the chips: *
 
 AI is **off until you turn it on**, and it only runs when you tap an AI button.
 
-<img src="manual/ai-consent.jpg" width="300" alt="AI consent">
+<img src="../public/help/ai-consent.jpg" width="300" alt="AI consent">
 
 The first time you tap one, Reclaim explains what's sent and to whom:
 
@@ -593,7 +593,7 @@ Tap **Turn On AI** to agree. You can turn it off any time in **Settings → AI F
 
 ### Show What’s Sent First
 
-<img src="manual/ai-preview.jpg" width="300" alt="What will be sent">
+<img src="../public/help/ai-preview.jpg" width="300" alt="What will be sent">
 
 Turn on **Settings → Show What’s Sent First** to see exactly what each AI request contains before it leaves your iPhone. Your question is shown in full; each part of your log is listed and can be expanded. Tap **Send** or **Cancel**. **Don’t show this again** turns the preview back off.
 
@@ -612,13 +612,13 @@ Turn on **Settings → Show What’s Sent First** to see exactly what each AI re
 | Recovery plan | Today, Exercise | A draft plan to show your physio (below) |
 | Report summary | Clinician Report | A short draft paragraph |
 
-<img src="manual/ai-note-review.jpg" width="300" alt="Note turned into entries">
+<img src="../public/help/ai-note-review.jpg" width="300" alt="Note turned into entries">
 
-<img src="manual/ai-health-overview.jpg" width="300" alt="Health overview">
+<img src="../public/help/ai-health-overview.jpg" width="300" alt="Health overview">
 
 ### Recovery Plan
 
-<img src="manual/ai-plan.jpg" width="300" alt="Recovery plan">
+<img src="../public/help/ai-plan.jpg" width="300" alt="Recovery plan">
 
 **Create My Plan** drafts a plan **for your physio to check**:
 
@@ -634,7 +634,7 @@ Nothing changes until you tick the exercises you want and tap **Use This Plan**.
 
 ## 16. Settings
 
-<img src="manual/settings.jpg" width="300" alt="Settings">
+<img src="../public/help/settings.jpg" width="300" alt="Settings">
 
 Open Settings from the round button with your initial on Today. From there:
 
@@ -642,12 +642,13 @@ Open Settings from the round button with your initial on Today. From there:
 - **Goals**, **Apple Health** and **Reminders**: see below.
 - **Appearance**: **System** (follows your iPhone's Light or Dark setting), **Light** or **Dark**.
 - **Google Drive**, **AI**, **Backup**, **Restore**, **Storage** and **Delete Everything**.
+- **User Manual** (under About): this manual, with every screen. The screenshots are kept on your iPhone after you've viewed them, so they work offline.
 
-<img src="manual/today-dark.jpg" width="300" alt="Today in dark mode">
+<img src="../public/help/today-dark.jpg" width="300" alt="Today in dark mode">
 
 ### Apple Health steps
 
-<img src="manual/apple-health.jpg" width="300" alt="Apple Health setup">
+<img src="../public/help/apple-health.jpg" width="300" alt="Apple Health setup">
 
 Web apps can't read Apple Health directly, so Reclaim uses a two-action Shortcut. Set it up once:
 
@@ -663,7 +664,7 @@ A [step-by-step illustrated guide](https://claude.ai/artifact/TeLGDUGFJszL5z7mSX
 
 ### Reminders
 
-<img src="manual/reminders.jpg" width="300" alt="Reminders">
+<img src="../public/help/reminders.jpg" width="300" alt="Reminders">
 
 **Daily Reminder** sends one notification in the evening, between about 7:30 and 8:30 pm India time. It tells you what's left for today: rehab, the morning check, the weekly check-in, or steps. On Sundays it also reminds you to look at your week.
 
@@ -674,7 +675,7 @@ A [step-by-step illustrated guide](https://claude.ai/artifact/TeLGDUGFJszL5z7mSX
 
 ### Google Drive
 
-<img src="manual/drive.jpg" width="300" alt="Google Drive">
+<img src="../public/help/drive.jpg" width="300" alt="Google Drive">
 
 **Connect Google Drive** gives you encrypted backups of your data and documents, synced between your devices.
 
@@ -688,7 +689,7 @@ Once connected, tap **Sync Now** any time. Documents added on one device are ava
 
 ### Backup, export and restore
 
-<img src="manual/export.jpg" width="300" alt="Export everything">
+<img src="../public/help/export.jpg" width="300" alt="Export everything">
 
 - **On This iPhone** shows how much you've logged and when you last backed up.
 - **Create Backup**: one file (`Reclaim-backup.json`) that Reclaim can restore. Save it to Files or send it to yourself.
@@ -767,4 +768,4 @@ The screenshots are taken by the app itself, filled with the demo person, using 
 MANUAL=1 npx playwright test manual --project=iphone-chromium
 ```
 
-They're saved to `docs/manual/`. The script is `e2e/manual.spec.ts`. It's skipped in normal test runs.
+They're saved to `public/help/`, where both this file and the app's User Manual page load them. The script is `e2e/manual.spec.ts`. It's skipped in normal test runs.

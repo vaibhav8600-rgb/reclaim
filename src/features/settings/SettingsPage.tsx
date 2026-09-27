@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Archive, Bell, Camera, Eye, Cloud, Download, FileUp, HardDrive, Heart, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Target, Trash2 } from 'lucide-react'
+import { Archive, Bell, BookOpen, Camera, Eye, Cloud, Download, FileUp, HardDrive, Heart, Info, LogOut, RefreshCw, Server, Share, ShieldCheck, Smartphone, Sparkles, Target, Trash2 } from 'lucide-react'
 import type { AiHealth } from '../../../shared/ai'
 import { AiConsentSheet } from '../../components/ai'
 import { aiHealth, setAiConsent, type AiConsent } from '../../lib/ai'
@@ -472,6 +472,7 @@ function AboutSection() {
   return (
     <Section title="About" footer="Reclaim helps you track your recovery and prepare for appointments. It doesn't diagnose, and it isn't a substitute for your doctor or physiotherapist.">
       <Group inset={TILE_INSET}>
+        <Row icon={<IconTile icon={BookOpen} color="green" />} title="User Manual" subtitle="How to use every part of Reclaim" to="/help" />
         <Row icon={<IconTile icon={Info} color="gray" />} title="Reclaim" subtitle="Get back to your life." value={`v${__APP_VERSION__}`} />
       </Group>
     </Section>
